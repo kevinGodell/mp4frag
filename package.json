@@ -15,10 +15,16 @@
     "fmp4",
     "fragmented",
     "fragment",
+    "fragments",
+    "segment",
+    "segments",
     "h264",
     "ffmpeg",
     "hls",
-    "m3u8"
+    "m3u8",
+    "media",
+    "source",
+    "extension"
   ],
   "author": "Kevin Godell <kevin.godell@gmail.com>",
   "license": "MIT",
