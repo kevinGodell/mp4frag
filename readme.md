@@ -110,15 +110,21 @@ const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
 
     //write the buffered segments
     writeStream.write(mp4frag.buffer);
-
-    //start writing the fresh segments as they arrive
-    mp4frag.on('segment', (segment) => {
-        writeStream.write(segment);
-    };
     
-    //eventually trigger an end to the writing
-    //by removing any event or callback
-    //and calling writeStream.end();
+    /*
+    //piping method as an alternative to passing data in "segment" event 
+    
+    //pipe fresh segments to writeStream
+    mp4frag.pipe(writeStream);
+    
+    //when you need to stop recording
+    
+    //unpipe
+    mp4frag.unpipe(writeStream);
+    
+    //end
+    writeStream.end();
+    */
     
 ```
 See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/record2.js
