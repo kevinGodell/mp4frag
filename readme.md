@@ -24,7 +24,7 @@ const mp4frag = new Mp4Frag({hlsListSize: 3, hlsBase: 'pool'});
 
 const ffmpeg = spawn(
     'ffmpeg',
-    ['-loglevel', 'quiet', '-probesize', '64', '-analyzeduration', '100000', '-reorder_queue_size', '5', '-rtsp_transport', 'tcp', '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp', '-an', '-c:v', 'copy', '-f', 'mp4', '-movflags', '+frag_keyframe+empty_moov+default_base_moof', '-metadata', 'title="ip 131.95.3.162"', '-reset_timestamps', '1', 'pipe:1'],
+    ['-loglevel', 'quiet', '-probesize', '64', '-analyzeduration', '100000', '-reorder_queue_size', '5', '-rtsp_transport', 'tcp', '-i', 'rtsp://216.4.116.29:554/axis-media/media.3gp', '-an', '-c:v', 'copy', '-f', 'mp4', '-movflags', '+frag_keyframe+empty_moov+default_base_moof', '-metadata', 'title="ip 216.4.116.29"', '-reset_timestamps', '1', 'pipe:1'],
     {stdio: ['ignore', 'pipe', 'inherit']}
 );
 
@@ -106,13 +106,13 @@ const fs = require('fs');
 const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
 
     //write in the initialization fragment of mp4 file
-    writeStream.write(mp4segmenter.initialization);
+    writeStream.write(mp4frag.initialization);
 
     //write the buffered segments
-    writeStream.write(mp4segmenter.buffer);
+    writeStream.write(mp4frag.buffer);
 
     //start writing the fresh segments as they arrive
-    mp4segmenter.on('segment', (segment) => {
+    mp4frag.on('segment', (segment) => {
         writeStream.write(segment);
     };
     
