@@ -13,7 +13,7 @@ Currently being used in a media source extension project @ https://github.com/ke
 
 # Possible usage examples
 
-1. ## Generate a live fmp4 HLS m3u8 playlist with ffmpeg
+## Example 1: *Generate a live fmp4 HLS m3u8 playlist with ffmpeg*
 
 ```
 const { spawn } = require('child_process');
@@ -78,7 +78,7 @@ app.get('/pool:id.m4s', (req, res) => {
     }
 });
 ```
-2. ## Create a buffer of past video to store for later usage, possibly for recording:
+## Example 2: *Create a buffer of past video to store for later usage, possibly for recording:*
 
 ```
 const { spawn } = require('child_process');
