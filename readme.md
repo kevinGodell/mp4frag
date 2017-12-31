@@ -78,7 +78,7 @@ app.get('/pool:id.m4s', (req, res) => {
     }
 });
 ```
-## Example 2: *Create a buffer of past video to store for later usage, possibly for recording:*
+## Example 2: *Create a buffer of past video to store for later recording:*
 
 ```
 const { spawn } = require('child_process');
