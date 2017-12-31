@@ -78,7 +78,8 @@ app.get('/pool:id.m4s', (req, res) => {
     }
 });
 ```
-## Example 2: *Create a buffer of past video to store for later recording:*
+See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/compare.js
+## Example 2: *Create a buffer of past video to store for later recording*
 
 ```
 const { spawn } = require('child_process');
@@ -115,8 +116,9 @@ const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
         writeStream.write(segment);
     };
     
-    //eventually trigger and end to the writing
+    //eventually trigger an end to the writing
     //by removing any event or callback
     //and calling writeStream.end();
     
-```    
+```
+See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/record2.js
