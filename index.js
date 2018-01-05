@@ -205,7 +205,7 @@ class Mp4Frag extends Transform {
             m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
             for(let i = 0; i < this._hlsList.length; i++) {
-                m3u8 += `#EXTINF:${this._hlsList[i].duration},\n`;
+                m3u8 += `#EXTINF:${this._hlsList[i].duration.toFixed(6)},\n`;
                 m3u8 += `${this._hlsBase}${this._hlsList[i].sequence}.m4s\n`;
             }
             this._m3u8 = m3u8;
