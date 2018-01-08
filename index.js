@@ -3,17 +3,24 @@
 
 const { Transform } = require('stream');
 
+/**
+ @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
+ Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
+ Can also be used for storing past segments of the mp4 video in a buffer for later access.
+ Must use the following ffmpeg flags `-movflags +frag_keyframe+empty_moov` to generate a fmp4
+ with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
+ @requires stream.Transform
+ @version 0.0.7
+ */
 class Mp4Frag extends Transform {
     /**
-     * Creates a stream transform for piping a fragmented mp4 stream from ffmpeg.
-     * Must use the following ffmpeg flags to generate correct mp4 output: `-movflags +frag_keyframe+empty_moov`.
-     * Outputs mp4 with file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
      * @constructor
      * @param {Object} [options] - Configuration options.
-     * @param {Number} [options.hlsListSize] - Number of segments to keep in m3u8 playlist (2 - 10).
-     * @param {String} [options.hlsBase] - Base name of files in m3u8 playlist.
-     * @param {Number} [options.bufferSize] - Number of segments to keep buffered (2 - 10).
-     * @param {Function} [callback] - Function to be called when segments are cut returning latest segment buffer.
+     * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist.
+     * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an unsigned int 2 >= n <= 10). Defaults to 4 if hlsBase is set and hlsListSize is not set.
+     * @param {Number} [options.bufferSize] - Number of segments to keep buffered. Must be an unsigned int 2 >= n <= 10.
+     * @param {Function} [callback] - Function to be called when segments are cut from pipe. Must be able to pass 1 parameter that will contain segment buffer.
+     * @returns this - Returns `this` as a reference to newly created Mp4Frag object for chaining event listeners.
      */
     constructor(options, callback) {
         super(options);
@@ -22,9 +29,11 @@ class Mp4Frag extends Transform {
         }
         this._parseChunk = this._findFtyp;
         if (options) {
-            if (options.hasOwnProperty('hlsListSize') && options.hasOwnProperty('hlsBase') && options.hlsBase) {
+            if (options.hasOwnProperty('hlsBase') && options.hlsBase) {
                 const hlsListSize = parseInt(options.hlsListSize);
-                if (isNaN(hlsListSize) || hlsListSize < 2) {
+                if(isNaN(hlsListSize)) {
+                    this._hlsListSize = 4;
+                } else if(hlsListSize < 2) {
                     this._hlsListSize = 2;
                 } else if (hlsListSize > 10) {
                     this._hlsListSize = 10;
@@ -51,7 +60,9 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * Get mime string.
+     * Get mime string that contains codec info.
+     * Returns null if mime string is requested before it has been generated.
+     * @readonly
      * @type {String|Null}
      */
     get mime() {
@@ -59,56 +70,69 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * Get init segment of mp4.
-     * @type {Buffer|Null}
+     * Get init fragment of mp4.
+     * Returns a zero length Buffer if init fragment is requested before it has been generated.
+     * @readonly
+     * @type {Buffer}
      */
     get initialization() {
-        return this._initialization || null;
+        return this._initialization || Buffer.alloc(0);
     }
 
     /**
-     * Get last segment cut from pipe.
-     * @type {Buffer|Null}
+     * Get latest segment cut from pipe.
+     * Returns a zero length Buffer if segment is requested before it has been generated.
+     * @readonly
+     * @type {Buffer}
      */
     get segment() {
-        return this._segment || null;
+        return this._segment || Buffer.alloc(0);
     }
 
     /**
-     * Get timestamp of last segment.
-     * @returns {Number|Null}
+     * Get timestamp of latest segment.
+     * Returns -1 if timestamp is requested before it has been generated.
+     * @readonly
+     * @type {Number}
      */
     get timestamp() {
         return this._timestamp || -1;
     }
 
     /**
-     * Get duration of last segment
-     * @returns {Number|Null}
+     * Get duration of latest segment.
+     * Returns -1 if duration is requested before it has been generated.
+     * @readonly
+     * @type {Number}
      */
     get duration() {
         return this._duration || -1;
     }
 
     /**
-     * Get m3u8 playlist.
-     * @returns {String|Null}
+     * Get fmp4 m3u8 playlist.
+     * Returns null if m3u8 is requested before it has been generated.
+     * @readonly
+     * @type {String|Null}
      */
     get m3u8() {
         return this._m3u8 || null;
     }
 
     /**
-     * Get latest sequence number of playlist.
-     * @returns {Number|Null}
+     * Get latest HLS sequence number of m3u8 playlist.
+     * Returns -1 if sequence is requested before it has been generated.
+     * @readonly
+     * @type {Number}
      */
     get sequence() {
-        return this._sequence || null;
+        return this._sequence || -1;
     }
 
     /**
-     * Get buffered segments concatenated.
-     * @returns {Buffer}
+     * Get buffered segments concatenated as a single Buffer.
+     * @readonly
+     * @type {Buffer}
      */
     get buffer() {
         if (this._bufferList && this._bufferList.length > 0) {
@@ -118,8 +142,8 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * Get segment using sequence number.
-     * @param {Number} sequence
+     * Get segment using HLS sequence number.
+     * @param {Number} sequence - Returns segment that corresponds to HLS sequence number in m3u8 playlist.
      * @returns {Buffer|Null}
      */
     getHlsSegment(sequence) {
@@ -186,6 +210,7 @@ class Mp4Frag extends Transform {
 
     /**
      * Parse moov for mime.
+     * @fires Mp4Frag#initialized
      * @private
      */
     _parseMoov(value) {
@@ -210,6 +235,10 @@ class Mp4Frag extends Transform {
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
             this._m3u8 = m3u8;
         }
+        /**
+         * Fires when init fragment of mp4 is found and parsed. Mp4Frag.mime, Mp4Frag.initialization, and a partial Mp4Frag.m3u8 playlist will be available at this point.
+         * @event Mp4Frag#initialized
+         */
         this.emit('initialized');
     }
 
