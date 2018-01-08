@@ -4,6 +4,17 @@
 const { Transform } = require('stream');
 
 class Mp4Frag extends Transform {
+    /**
+     * Creates a stream transform for piping a fragmented mp4 stream from ffmpeg.
+     * Must use the following ffmpeg flags to generate correct mp4 output: `-movflags +frag_keyframe+empty_moov`.
+     * Outputs mp4 with file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
+     * @constructor
+     * @param {Object} [options] - Configuration options.
+     * @param {Number} [options.hlsListSize] - Number of segments to keep in m3u8 playlist (2 - 10).
+     * @param {String} [options.hlsBase] - Base name of files in m3u8 playlist.
+     * @param {Number} [options.bufferSize] - Number of segments to keep buffered (2 - 10).
+     * @param {Function} [callback] - Function to be called when segments are cut returning latest segment buffer.
+     */
     constructor(options, callback) {
         super(options);
         if (typeof callback === 'function') {
@@ -36,36 +47,69 @@ class Mp4Frag extends Transform {
                 this._bufferList = [];
             }
         }
+        return this;
     }
 
+    /**
+     * Get mime string.
+     * @type {String|Null}
+     */
     get mime() {
         return this._mime || null;
     }
 
+    /**
+     * Get init segment of mp4.
+     * @type {Buffer|Null}
+     */
     get initialization() {
         return this._initialization || null;
     }
 
+    /**
+     * Get last segment cut from pipe.
+     * @type {Buffer|Null}
+     */
     get segment() {
         return this._segment || null;
     }
 
+    /**
+     * Get timestamp of last segment.
+     * @returns {Number|Null}
+     */
     get timestamp() {
-        return this._timestamp || null;
+        return this._timestamp || -1;
     }
 
+    /**
+     * Get duration of last segment
+     * @returns {Number|Null}
+     */
     get duration() {
-        return this._duration || null;
+        return this._duration || -1;
     }
 
+    /**
+     * Get m3u8 playlist.
+     * @returns {String|Null}
+     */
     get m3u8() {
         return this._m3u8 || null;
     }
 
+    /**
+     * Get latest sequence number of playlist.
+     * @returns {Number|Null}
+     */
     get sequence() {
         return this._sequence || null;
     }
 
+    /**
+     * Get buffered segments concatenated.
+     * @returns {Buffer}
+     */
     get buffer() {
         if (this._bufferList && this._bufferList.length > 0) {
             return Buffer.concat(this._bufferList);
@@ -73,6 +117,11 @@ class Mp4Frag extends Transform {
         return Buffer.alloc(0);
     }
 
+    /**
+     * Get segment using sequence number.
+     * @param {Number} sequence
+     * @returns {Buffer|Null}
+     */
     getHlsSegment(sequence) {
         if (sequence && this._hlsList && this._hlsList.length > 0) {
             for (let i = 0; i < this._hlsList.length; i++) {
@@ -84,6 +133,10 @@ class Mp4Frag extends Transform {
         return null;
     }
 
+    /**
+     * Search buffer for ftyp.
+     * @private
+     */
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x66 || chunk[5] !== 0x74 || chunk[6] !== 0x79 || chunk[7] !== 0x70) {
@@ -103,6 +156,10 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Search buffer for moov.
+     * @private
+     */
     _findMoov(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x76) {
@@ -127,6 +184,10 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Parse moov for mime.
+     * @private
+     */
     _parseMoov(value) {
         this._initialization = value;
         let audioString = '';
@@ -152,6 +213,10 @@ class Mp4Frag extends Transform {
         this.emit('initialized');
     }
 
+    /**
+     * Find moof after miss due to corrupt data in pipe.
+     * @private
+     */
     _moofHunt(chunk) {
         const index = chunk.indexOf('moof');
         if (index > 3) {
@@ -160,6 +225,10 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Search buffer for moof.
+     * @private
+     */
     _findMoof(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
@@ -188,6 +257,10 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Process current segment.
+     * @private
+     */
     _setSegment(chunk) {
         this._segment = chunk;
         const currentTime = Date.now();
@@ -218,6 +291,10 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Search buffer for mdat.
+     * @private
+     */
     _findMdat(chunk) {
         if (this._mdatBuffer) {
             this._mdatBuffer.push(chunk);
@@ -291,11 +368,19 @@ class Mp4Frag extends Transform {
         }
     }
 
+    /**
+     * Required for stream transform.
+     * @private
+     */
     _transform(chunk, encoding, callback) {
         this._parseChunk(chunk);
         callback();
     }
 
+    /**
+     * Run cleanup when unpiped.
+     * @private
+     */
     _flush(callback) {
         this._parseChunk = this._findFtyp;
         delete this._mime;
@@ -323,6 +408,3 @@ class Mp4Frag extends Transform {
 }
 
 module.exports = Mp4Frag;
-
-//ffmpeg mp4 fragmenting : -movflags +frag_keyframe+empty_moov+default_base_moof
-//outputs file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
