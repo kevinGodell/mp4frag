@@ -4,7 +4,7 @@ Parser that works with ffmpeg to read piped data and fragment mp4 into an initia
 
 Currently being used in a media source extension project @ https://github.com/kevinGodell/mse-live-player
 
-# Options for instantiating new Mp4Frag
+# Options for a new instance of Mp4Frag
 
 #### bufferListSize: unsigned int (2 - 10), *setting this value will store specified number of media segments in the buffer*
 `const mp4frag = new Mp4Frag({bufferListSize: 3});`
