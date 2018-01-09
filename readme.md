@@ -1,11 +1,13 @@
 Parser that works with ffmpeg to read piped data and fragment mp4 into an initialization segment and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist. ***Must use the following flags with ffmpeg targeting the output***: *-f mp4 -movflags +faststart+frag_keyframe*.
 
+[jsdocs](https://kevingodell.github.io/mp4frag/)
+
 Currently being used in a media source extension project @ https://github.com/kevinGodell/mse-live-player
 
 # Options for instantiating new Mp4Frag
 
-#### bufferSize: unsigned int (2 - 10), *setting this value will store specified number of media segments in the buffer*
-`const mp4frag = new Mp4Frag({bufferSize: 3});`
+#### bufferListSize: unsigned int (2 - 10), *setting this value will store specified number of media segments in the buffer*
+`const mp4frag = new Mp4Frag({bufferListSize: 3});`
 
 #### hlsListSize: unsigned int (2 - 10), *setting this along with hlsBase will generate a live fmp4 HLS m3u8 playlist*
 #### hlsBase: 'string', *setting this along with hlsListSize will generate a live fmp4 HLS m3u8 playlist*
@@ -88,7 +90,7 @@ const Mp4Frag = require('mp4frag');
 
 //3 past segments will be held in buffer for later access via mp4frag.buffer
 //if each segment has a duration of 2 seconds, then buffer will contain 6 seconds of video
-const mp4frag = new Mp4Frag({bufferSize: 3});
+const mp4frag = new Mp4Frag({bufferListSize: 3});
 
 const ffmpeg = spawn(
     'ffmpeg',
