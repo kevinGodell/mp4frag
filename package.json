@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "preversion": "npm test",
-    "jsdoc": "jsdoc index.js -d docs"
+    "jsdoc": "jsdoc index.js -d docs && git commit -m 'generate jsdocs' -- docs"
   },
   "repository": {
     "type": "git",
