@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>Mp4Frag<span class="signature">(options<span class="signature-attributes">opt</span>, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>Mp4Frag<span class="signature">(options<span class="signature-attributes">opt</span>, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object}</span></h2>
         
     
 </header>
@@ -41,7 +41,7 @@
     
 
     
-    <h4 class="name" id="Mp4Frag"><span class="type-signature"></span>new Mp4Frag<span class="signature">(options<span class="signature-attributes">opt</span>, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Mp4Frag"><span class="type-signature"></span>new Mp4Frag<span class="signature">(options<span class="signature-attributes">opt</span>, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object}</span></h4>
     
 
     
@@ -196,14 +196,14 @@
 
             
 
-            <td class="description last">Number of segments to keep in fmp4 m3u8 playlist. Must be an unsigned int 2 >= n <= 10). Defaults to 4 if hlsBase is set and hlsListSize is not set.</td>
+            <td class="description last">Number of segments to keep in fmp4 m3u8 playlist. Must be an unsigned int ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>bufferSize</code></td>
+                <td class="name"><code>bufferListSize</code></td>
             
 
             <td class="type">
@@ -229,7 +229,7 @@
 
             
 
-            <td class="description last">Number of segments to keep buffered. Must be an unsigned int 2 >= n <= 10.</td>
+            <td class="description last">Number of segments to keep buffered. Must be an unsigned int ranging from 2 to 10. Independent of HLS settings.</td>
         </tr>
 
     
@@ -337,10 +337,22 @@
 
         
 <div class="param-desc">
-    this - Returns `this` as a reference to newly created Mp4Frag object for chaining event listeners.
+    this - Returns reference to new instance of Mp4Frag for chaining event listeners.
 </div>
 
 
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
 
     
 
@@ -368,13 +380,14 @@
 
         
             
-<h4 class="name" id="buffer"><span class="type-signature">(readonly) </span>buffer<span class="type-signature"> :Buffer</span></h4>
+<h4 class="name" id="bufferConcat"><span class="type-signature">(readonly) </span>bufferConcat<span class="type-signature"> :Buffer|Null</span></h4>
 
 
 
 
 <div class="description">
-    Get buffered segments concatenated as a single Buffer.
+    Gets init fragment plus buffered segments concatenated as a single Buffer.
+Returns null if bufferConcat is requested before it has been generated.
 </div>
 
 
@@ -384,6 +397,9 @@
         <li>
             
 <span class="param-type">Buffer</span>
+|
+
+<span class="param-type">Null</span>
 
 
         </li>
@@ -422,7 +438,159 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line137">line 137</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line164">line 164</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="bufferList"><span class="type-signature">(readonly) </span>bufferList<span class="type-signature"> :Array|Null</span></h4>
+
+
+
+
+<div class="description">
+    Gets array of buffered segments.
+Returns null if bufferList is requested before it has been generated.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array</span>
+|
+
+<span class="param-type">Null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line138">line 138</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="bufferListConcat"><span class="type-signature">(readonly) </span>bufferListConcat<span class="type-signature"> :Buffer|Null</span></h4>
+
+
+
+
+<div class="description">
+    Gets buffered segments concatenated as a single Buffer.
+Returns null if bufferListConcat is requested before it has been generated.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Buffer</span>
+|
+
+<span class="param-type">Null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line151">line 151</a>
     </li></ul></dd>
     
 
@@ -446,7 +614,7 @@
 
 
 <div class="description">
-    Get duration of latest segment.
+    Gets duration of latest segment.
 Returns -1 if duration is requested before it has been generated.
 </div>
 
@@ -513,14 +681,14 @@ Returns -1 if duration is requested before it has been generated.
 
         
             
-<h4 class="name" id="initialization"><span class="type-signature">(readonly) </span>initialization<span class="type-signature"> :Buffer</span></h4>
+<h4 class="name" id="initialization"><span class="type-signature">(readonly) </span>initialization<span class="type-signature"> :Buffer|Null</span></h4>
 
 
 
 
 <div class="description">
-    Get init fragment of mp4.
-Returns a zero length Buffer if init fragment is requested before it has been generated.
+    Gets init fragment of mp4.
+Returns null if init fragment is requested before it has been generated.
 </div>
 
 
@@ -530,6 +698,9 @@ Returns a zero length Buffer if init fragment is requested before it has been ge
         <li>
             
 <span class="param-type">Buffer</span>
+|
+
+<span class="param-type">Null</span>
 
 
         </li>
@@ -592,7 +763,7 @@ Returns a zero length Buffer if init fragment is requested before it has been ge
 
 
 <div class="description">
-    Get fmp4 m3u8 playlist.
+    Gets fmp4 m3u8 playlist.
 Returns null if m3u8 is requested before it has been generated.
 </div>
 
@@ -668,7 +839,7 @@ Returns null if m3u8 is requested before it has been generated.
 
 
 <div class="description">
-    Get mime string that contains codec info.
+    Gets mime string that contains codec info.
 Returns null if mime string is requested before it has been generated.
 </div>
 
@@ -738,14 +909,14 @@ Returns null if mime string is requested before it has been generated.
 
         
             
-<h4 class="name" id="segment"><span class="type-signature">(readonly) </span>segment<span class="type-signature"> :Buffer</span></h4>
+<h4 class="name" id="segment"><span class="type-signature">(readonly) </span>segment<span class="type-signature"> :Buffer|null</span></h4>
 
 
 
 
 <div class="description">
-    Get latest segment cut from pipe.
-Returns a zero length Buffer if segment is requested before it has been generated.
+    Gets latest segment cut from pipe.
+Returns null if segment is requested before it has been generated.
 </div>
 
 
@@ -755,6 +926,9 @@ Returns a zero length Buffer if segment is requested before it has been generate
         <li>
             
 <span class="param-type">Buffer</span>
+|
+
+<span class="param-type">null</span>
 
 
         </li>
@@ -817,7 +991,7 @@ Returns a zero length Buffer if segment is requested before it has been generate
 
 
 <div class="description">
-    Get latest HLS sequence number of m3u8 playlist.
+    Gets latest HLS sequence number of m3u8 playlist.
 Returns -1 if sequence is requested before it has been generated.
 </div>
 
@@ -890,7 +1064,7 @@ Returns -1 if sequence is requested before it has been generated.
 
 
 <div class="description">
-    Get timestamp of latest segment.
+    Gets timestamp of latest segment.
 Returns -1 if timestamp is requested before it has been generated.
 </div>
 
@@ -975,7 +1149,7 @@ Returns -1 if timestamp is requested before it has been generated.
 
 
 <div class="description">
-    Get segment using HLS sequence number.
+    Gets segment using HLS sequence number.
 </div>
 
 
@@ -1068,7 +1242,7 @@ Returns -1 if timestamp is requested before it has been generated.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line149">line 149</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line176">line 176</a>
     </li></ul></dd>
     
 
@@ -1183,7 +1357,155 @@ Returns -1 if timestamp is requested before it has been generated.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line238">line 238</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line265">line 265</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="event:segment">segment</h4>
+    
+
+    
+
+
+
+<div class="description">
+    Fires when latest segment of mp4 is cut from pipe.
+</div>
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Buffer</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>segment</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Contains Buffer of latest segment.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line356">line 356</a>
     </li></ul></dd>
     
 
@@ -1223,13 +1545,13 @@ Returns -1 if timestamp is requested before it has been generated.
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Mp4Frag.html">Mp4Frag</a></li></ul><h3>Events</h3><ul><li><a href="Mp4Frag.html#event:initialized">initialized</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Mp4Frag.html">Mp4Frag</a></li></ul><h3>Events</h3><ul><li><a href="Mp4Frag.html#event:initialized">initialized</a></li><li><a href="Mp4Frag.html#event:segment">segment</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Jan 08 2018 17:23:32 GMT-0600 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Jan 08 2018 20:13:44 GMT-0600 (CST)
 </footer>
 
 <script> prettyPrint(); </script>
