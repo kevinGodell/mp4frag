@@ -4,7 +4,11 @@
   "description": "Parser that works with ffmpeg to read piped data and fragment mp4 into an initialization segment and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist. Must use the following flags with ffmpeg targeting the output: -f mp4 -movflags +faststart+frag_keyframe.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preversion": "npm test",
+    "preversion:docs": "replace '/v\\d+\\.\\d+\\.\\d+' \"/v$npm_package_version\" ./index.js",
+    "version": "npm run preversion:docs && npm run jsdoc",
+    "jsdoc": "jsdoc index.js -d docs"
   },
   "repository": {
     "type": "git",
@@ -31,5 +35,9 @@
   "bugs": {
     "url": "https://github.com/kevinGodell/mp4frag/issues"
   },
-  "homepage": "https://github.com/kevinGodell/mp4frag#readme"
+  "homepage": "https://github.com/kevinGodell/mp4frag#readme",
+  "docs": "https://kevingodell.github.io/mp4frag/",
+  "devDependencies": {
+    "jsdoc": "^3.5.5"
+  }
 }
