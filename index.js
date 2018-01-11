@@ -10,7 +10,7 @@ const { Transform } = require('stream');
  Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
  with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  @requires stream.Transform
- @version v0.0.10
+ @version v0.0.11
  */
 class Mp4Frag extends Transform {
     /**
@@ -293,7 +293,7 @@ class Mp4Frag extends Transform {
          * @property {Buffer} Object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
          */
 
-        this.emit('initialized');
+        this.emit('initialized', {mime: this._mime, initialization: this._initialization});
     }
 
     /**
