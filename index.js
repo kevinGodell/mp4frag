@@ -7,19 +7,19 @@ const { Transform } = require('stream');
  @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
  Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
  Can also be used for storing past segments of the mp4 video in a buffer for later access.
- Must use the following ffmpeg flags `-movflags +frag_keyframe+empty_moov` to generate a fmp4
+ Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
  with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  @requires stream.Transform
- @version v0.0.9
+ @version v0.0.10
  */
 class Mp4Frag extends Transform {
     /**
      * @constructor
      * @param {Object} [options] - Configuration options.
      * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist.
-     * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an unsigned int ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
-     * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an unsigned int ranging from 2 to 10. Independent of HLS settings.
-     * @param {Function} [callback] - Function to be called when segments are cut from pipe. Must be able to pass 1 parameter that will contain segment buffer.
+     * @param {Integer} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
+     * @param {Integer} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
+     * @param {Function} [callback] - Function to be called when segments are parsed from piped data. Must be able to pass 1 parameter that will contain segment buffer.
      * @returns {Object} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
      */
     constructor(options, callback) {
@@ -62,9 +62,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {String} mime
-     * - Returns string that contains mime/codec info.
+     * - Returns the mime codec information as a String.
      * <br/>
      * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+     * @returns {String}
      */
     get mime() {
         return this._mime || null;
@@ -73,9 +74,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Buffer} initialization
-     * - Returns Buffer containing init fragment of mp4.
+     * - Returns the mp4 initialization fragment as a Buffer.
      * <br/>
      * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+     * @returns {Buffer}
      */
     get initialization() {
         return this._initialization || null;
@@ -84,9 +86,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Buffer} segment
-     * - Returns Buffer containing latest mp4 segment.
+     * - Returns the latest Mp4 segment as a Buffer.
      * <br/>
      * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Buffer}
      */
     get segment() {
         return this._segment || null;
@@ -95,9 +98,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Integer} timestamp
-     * - Returns timestamp in milliseconds of latest mp4 segment.
+     * - Returns the timestamp of the latest Mp4 segment as an Integer(milliseconds).
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Integer}
      */
     get timestamp() {
         return this._timestamp || -1;
@@ -106,9 +110,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Float} duration
-     * - Returns duration in seconds of latest mp4 segment.
+     * - Returns the duration of latest Mp4 segment as a Float(seconds).
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Float}
      */
     get duration() {
         return this._duration || -1;
@@ -117,9 +122,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {String} m3u8
-     * - Returns string of fmp4 HLS m3u8 playlist.
+     * - Returns the fmp4 HLS m3u8 playlist as a String.
      * <br/>
      * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+     * @returns {String}
      */
     get m3u8() {
         return this._m3u8 || null;
@@ -128,9 +134,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Integer} sequence
-     * - Returns latest sequence number of m3u8 playlist.
+     * - Returns the latest sequence of the fmp4 HLS m3u8 playlist as an Integer.
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Integer}
      */
     get sequence() {
         return this._sequence || -1;
@@ -139,9 +146,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Array} bufferList
-     * - Returns Array of buffered segments.
+     * - Returns the buffered mp4 segments as an Array.
      * <br/>
      * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Array}
      */
     get bufferList() {
         if (this._bufferList && this._bufferList.length > 0) {
@@ -153,9 +161,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Buffer} bufferListConcat
-     * - Returns Buffer of concatenated bufferList.
+     * - Returns the [Mp4Frag.bufferList]{@link Mp4Frag#bufferList} concatenated as a Buffer.
      * <br/>
      * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Buffer}
      */
     get bufferListConcat() {
         if (this._bufferList && this._bufferList.length > 0) {
@@ -167,9 +176,10 @@ class Mp4Frag extends Transform {
     /**
      * @readonly
      * @property {Buffer} bufferConcat
-     * - Returns Buffer of concatenated initialization + bufferList.
+     * - Returns the [Mp4Frag.initialization]{@link Mp4Frag#initialization} and [Mp4Frag.bufferList]{@link Mp4Frag#bufferList} concatenated as a Buffer.
      * <br/>
      * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+     * @returns {Buffer}
      */
     get bufferConcat() {
         if (this._initialization && this._bufferList && this._bufferList.length > 0) {
@@ -179,11 +189,11 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * @param {Number} sequence
-     * - Returns segment that corresponds to HLS sequence number in m3u8 playlist.
+     * @param {Integer} sequence
+     * - Returns the Mp4 segment that corresponds to the HLS sequence number as a Buffer.
      * <br/>
-     * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
-     * @returns {Buffer|Null}
+     * - Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence number.
+     * @returns {Buffer}
      */
     getHlsSegment(sequence) {
         if (sequence && this._hlsList && this._hlsList.length > 0) {
@@ -275,9 +285,14 @@ class Mp4Frag extends Transform {
             this._m3u8 = m3u8;
         }
         /**
-         * Fires when init fragment of mp4 is found and parsed. Mp4Frag.mime, Mp4Frag.initialization, and a partial Mp4Frag.m3u8 playlist will be available at this point.
+         * Fires when the init fragment of the Mp4 is parsed from the piped data.
          * @event Mp4Frag#initialized
+         * @type {Event}
+         * @property {Object} Object
+         * @property {String} Object.mime - [Mp4Frag.mime]{@link Mp4Frag#mime}
+         * @property {Buffer} Object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
          */
+
         this.emit('initialized');
     }
 
@@ -366,10 +381,10 @@ class Mp4Frag extends Transform {
         }
         if (this.listenerCount('segment') > 0) {
             /**
-             * Fires when latest segment of mp4 is cut from pipe.
+             * Fires when the latest Mp4 segment is parsed from the piped data.
              * @event Mp4Frag#segment
-             * @type {Buffer}
-             * @property {Buffer} segment - Contains Buffer of latest segment.
+             * @type {Event}
+             * @property {Buffer} segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
              */
             this.emit('segment', this._segment);
         }
