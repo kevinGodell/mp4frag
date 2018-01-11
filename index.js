@@ -4,13 +4,13 @@
 const { Transform } = require('stream');
 
 /**
- @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
- Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
- Can also be used for storing past segments of the mp4 video in a buffer for later access.
- Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
- with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
- @requires stream.Transform
- @version v0.0.11
+ * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
+ * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
+ * Can also be used for storing past segments of the mp4 video in a buffer for later access.
+ * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
+ * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
+ * @requires stream.Transform
+ * @version v0.0.11
  */
 class Mp4Frag extends Transform {
     /**
