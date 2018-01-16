@@ -213,8 +213,7 @@ class Mp4Frag extends Transform {
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x66 || chunk[5] !== 0x74 || chunk[6] !== 0x79 || chunk[7] !== 0x70) {
-            //throw new Error('cannot find ftyp');
-            this.emit('error', {type: 'ftyp', msg: 'Cannot find ftyp.'});
+            throw new Error("FTYP not found.");
         }
         this._ftypLength = chunk.readUInt32BE(0, true);
         if (this._ftypLength < chunkLength) {
@@ -225,9 +224,9 @@ class Mp4Frag extends Transform {
             this._ftyp = chunk;
             this._parseChunk = this._findMoov;
         } else {
-            //should not be possible to get here because ftyp is very small
-            //throw new Error('ftypLength greater than chunkLength');
-            this.emit('error', {type: 'ftyp', msg: 'ftypLength > chunkLength.'});
+            //should not be possible to get here because ftyp is approximately 24 bytes
+            //will have to buffer this chunk and wait for rest of it on next pass
+            throw new Error('ftypLength > chunkLength.');
         }
     }
 
@@ -238,8 +237,7 @@ class Mp4Frag extends Transform {
     _findMoov(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x76) {
-            //throw new Error('cannot find moov');
-            this.emit('error', {type: 'moov', msg: 'Cannot find moov.'});
+            throw new Error('MOOV not found');
         }
         const moovLength = chunk.readUInt32BE(0, true);
         if (moovLength < chunkLength) {
@@ -254,10 +252,10 @@ class Mp4Frag extends Transform {
             delete this._ftypLength;
             this._parseChunk = this._findMoof;
         } else {
-            //probably should not arrive here here
-            //if we do, will have to store chunk until size is big enough to have entire moov piece
-            //throw new Error('moovLength greater than chunkLength');
-            this.emit('error', {type: 'moov', msg: 'moovLength > chunkLength.'});
+            //probably should not arrive here here because moov is typically < 800 bytes
+            //will have to store chunk until size is big enough to have entire moov piece
+            //ffmpeg may have crashed before it could output moov and got us here
+            throw new Error('moovLength > chunkLength');
         }
     }
 
@@ -274,8 +272,7 @@ class Mp4Frag extends Transform {
         }
         let index = this._initialization.indexOf('avcC');
         if (index === -1) {
-            //throw new Error('moov does not contain codec information');
-            this.emit('error', {type: 'moov', msg: 'moov does not contain codec information.'});
+            throw new Error('Codec info not found');
         }
         index += 5;
         this._mime = `video/mp4; codecs="avc1.${this._initialization.slice(index, index + 3).toString('hex').toUpperCase()}${audioString}"`;
@@ -306,10 +303,18 @@ class Mp4Frag extends Transform {
      * @private
      */
     _moofHunt(chunk) {
-        const index = chunk.indexOf('moof');
-        if (index > 3) {
-            this._parseChunk = this._findMoof;
-            this._parseChunk(chunk.slice(index - 4));
+        if (this._moofHunts < this._moofHuntsLimit) {
+            this._moofHunts++;
+            console.log(`moof hunt attempt number ${this._moofHunts}`);
+            const index = chunk.indexOf('moof');
+            if (index > 3 && chunk.length > index + 3) {
+                delete this._moofHunts;
+                delete this._moofHuntsLimit;
+                this._parseChunk = this._findMoof;
+                this._parseChunk(chunk.slice(index - 4));
+            }
+        } else {
+            throw new Error(`MOOF hunt failed after ${this._moofHunts} attempts.`);
         }
     }
 
@@ -320,17 +325,13 @@ class Mp4Frag extends Transform {
     _findMoof(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
-            //did not previously parse a complete segment
-            if (!this._segment) {
-                //console.log(chunk.slice(0, 20).toString());
-                //throw new Error('immediately failed to find moof');
-                this.emit('error', {type: 'moof', msg: 'Failed to find moof on first attempt.'});
-            } else {
-                //have to do a string search for moof or mdat and start loop again,
-                //sometimes ffmpeg gets a blast of data and sends it through corrupt
-                this._parseChunk = this._moofHunt;
-                this._parseChunk(chunk);
-            }
+            //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
+            console.warn('Failed to find MOOF. Starting MOOF hunt.');
+            this._moofHunts = 0;
+            this._moofHuntsLimit = 40;
+            this._parseChunk = this._moofHunt;
+            this._parseChunk(chunk);
+            return;
         }
         this._moofLength = chunk.readUInt32BE(0, true);
         if (this._moofLength < chunkLength) {
@@ -341,11 +342,9 @@ class Mp4Frag extends Transform {
             this._moof = chunk;
             this._parseChunk = this._findMdat;
         } else {
-            //situation has not occurred yet
-            //throw new Error('mooflength > chunklength');
-            this.emit('error', {type: 'moof', msg: 'moofLength > chunkLength.'});
-            //if ffmpeg exits, chunk will be cut short and error gets thrown here. must account for
-            //todo convert to error events
+            //situation has not occur unless ffmpeg is ended abruptly and data becomes corrupted
+            //log it to console in case it becomes an issue
+            console.warn('mooflength > chunklength');
         }
     }
 
@@ -411,8 +410,6 @@ class Mp4Frag extends Transform {
                 this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], (this._moofLength + this._mdatLength)));
                 delete this._moof;
                 delete this._mdatBuffer;
-                delete this._moofLength;
-                delete this._mdatLength;
                 delete this._mdatBufferSize;
                 this._parseChunk = this._findMoof;
             } else if (this._mdatLength < this._mdatBufferSize) {
@@ -420,8 +417,6 @@ class Mp4Frag extends Transform {
                 const sliceIndex = this._mdatBufferSize - this._mdatLength;
                 delete this._moof;
                 delete this._mdatBuffer;
-                delete this._moofLength;
-                delete this._mdatLength;
                 delete this._mdatBufferSize;
                 this._parseChunk = this._findMoof;
                 this._parseChunk(chunk.slice(sliceIndex));
@@ -429,9 +424,7 @@ class Mp4Frag extends Transform {
         } else {
             const chunkLength = chunk.length;
             if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x64 || chunk[6] !== 0x61 || chunk[7] !== 0x74) {
-                //console.log(chunk.slice(0, 20).toString());
-                //throw new Error('cannot find mdat');
-                this.emit('error', {type: 'mdat', msg: 'Cannot find mdat.'});
+                throw new Error('MDAT not found');
             }
             this._mdatLength = chunk.readUInt32BE(0, true);
             if (this._mdatLength > chunkLength) {
@@ -440,16 +433,12 @@ class Mp4Frag extends Transform {
             } else if (this._mdatLength === chunkLength) {
                 this._setSegment(Buffer.concat([this._moof, chunk], (this._moofLength + chunkLength)));
                 delete this._moof;
-                delete this._moofLength;
-                delete this._mdatLength;
                 this._parseChunk = this._findMoof;
             } else {
-                //throw new Error('mdatlength < chunklength');
-                this.emit('error', {type: 'moof', msg: 'mdatLength < chunkLength.'});
-                /*this._setSegment(Buffer.concat([this._moof, chunk.slice(0, this._mdatLength)], (this._moofLength + this._mdatLength)));
+                this._setSegment(Buffer.concat([this._moof, chunk.slice(0, this._mdatLength)], (this._moofLength + this._mdatLength)));
                 delete this._moof;
                 this._parseChunk = this._findMoof;
-                this._parseChunk(chunk.slice(this._mdatLength));*/
+                this._parseChunk(chunk.slice(this._mdatLength));
             }
         }
     }
