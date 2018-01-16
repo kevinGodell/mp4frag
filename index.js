@@ -10,7 +10,7 @@ const { Transform } = require('stream');
  * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
  * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  * @requires stream.Transform
- * @version v0.0.11
+ * @version v0.0.12
  */
 class Mp4Frag extends Transform {
     /**
@@ -213,7 +213,8 @@ class Mp4Frag extends Transform {
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x66 || chunk[5] !== 0x74 || chunk[6] !== 0x79 || chunk[7] !== 0x70) {
-            throw new Error('cannot find ftyp');
+            //throw new Error('cannot find ftyp');
+            this.emit('error', {type: 'ftyp', msg: 'Cannot find ftyp.'});
         }
         this._ftypLength = chunk.readUInt32BE(0, true);
         if (this._ftypLength < chunkLength) {
@@ -225,7 +226,8 @@ class Mp4Frag extends Transform {
             this._parseChunk = this._findMoov;
         } else {
             //should not be possible to get here because ftyp is very small
-            throw new Error('ftypLength greater than chunkLength');
+            //throw new Error('ftypLength greater than chunkLength');
+            this.emit('error', {type: 'ftyp', msg: 'ftypLength > chunkLength.'});
         }
     }
 
@@ -236,7 +238,8 @@ class Mp4Frag extends Transform {
     _findMoov(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x76) {
-            throw new Error('cannot find moov');
+            //throw new Error('cannot find moov');
+            this.emit('error', {type: 'moov', msg: 'Cannot find moov.'});
         }
         const moovLength = chunk.readUInt32BE(0, true);
         if (moovLength < chunkLength) {
@@ -253,7 +256,8 @@ class Mp4Frag extends Transform {
         } else {
             //probably should not arrive here here
             //if we do, will have to store chunk until size is big enough to have entire moov piece
-            throw new Error('moovLength greater than chunkLength');
+            //throw new Error('moovLength greater than chunkLength');
+            this.emit('error', {type: 'moov', msg: 'moovLength > chunkLength.'});
         }
     }
 
@@ -270,7 +274,8 @@ class Mp4Frag extends Transform {
         }
         let index = this._initialization.indexOf('avcC');
         if (index === -1) {
-            throw new Error('moov does not contain codec information');
+            //throw new Error('moov does not contain codec information');
+            this.emit('error', {type: 'moov', msg: 'moov does not contain codec information.'});
         }
         index += 5;
         this._mime = `video/mp4; codecs="avc1.${this._initialization.slice(index, index + 3).toString('hex').toUpperCase()}${audioString}"`;
@@ -317,8 +322,9 @@ class Mp4Frag extends Transform {
         if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
             //did not previously parse a complete segment
             if (!this._segment) {
-                console.log(chunk.slice(0, 20).toString());
-                throw new Error('immediately failed to find moof');
+                //console.log(chunk.slice(0, 20).toString());
+                //throw new Error('immediately failed to find moof');
+                this.emit('error', {type: 'moof', msg: 'Failed to find moof on first attempt.'});
             } else {
                 //have to do a string search for moof or mdat and start loop again,
                 //sometimes ffmpeg gets a blast of data and sends it through corrupt
@@ -336,7 +342,10 @@ class Mp4Frag extends Transform {
             this._parseChunk = this._findMdat;
         } else {
             //situation has not occurred yet
-            throw new Error('mooflength > chunklength');
+            //throw new Error('mooflength > chunklength');
+            this.emit('error', {type: 'moof', msg: 'moofLength > chunkLength.'});
+            //if ffmpeg exits, chunk will be cut short and error gets thrown here. must account for
+            //todo convert to error events
         }
     }
 
@@ -420,8 +429,9 @@ class Mp4Frag extends Transform {
         } else {
             const chunkLength = chunk.length;
             if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x64 || chunk[6] !== 0x61 || chunk[7] !== 0x74) {
-                console.log(chunk.slice(0, 20).toString());
-                throw new Error('cannot find mdat');
+                //console.log(chunk.slice(0, 20).toString());
+                //throw new Error('cannot find mdat');
+                this.emit('error', {type: 'mdat', msg: 'Cannot find mdat.'});
             }
             this._mdatLength = chunk.readUInt32BE(0, true);
             if (this._mdatLength > chunkLength) {
@@ -434,8 +444,12 @@ class Mp4Frag extends Transform {
                 delete this._mdatLength;
                 this._parseChunk = this._findMoof;
             } else {
-                console.log(this._mdatLength, chunkLength);
-                throw new Error('mdatLength less than chunkLength');
+                //throw new Error('mdatlength < chunklength');
+                this.emit('error', {type: 'moof', msg: 'mdatLength < chunkLength.'});
+                /*this._setSegment(Buffer.concat([this._moof, chunk.slice(0, this._mdatLength)], (this._moofLength + this._mdatLength)));
+                delete this._moof;
+                this._parseChunk = this._findMoof;
+                this._parseChunk(chunk.slice(this._mdatLength));*/
             }
         }
     }
