@@ -13,6 +13,8 @@ const frameLimit = 100;
 
 const gop = 10;
 
+const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
+
 const scale =  640;
 
 const fps = 100;
@@ -22,7 +24,7 @@ let counter = 0;
 const params = [
     /* log info to console */
     '-loglevel', 'quiet',
-    '-stats',
+    //'-stats',
 
     /* use hardware acceleration if available */
     '-hwaccel', 'auto',
@@ -50,27 +52,28 @@ const params = [
 const mp4frag = new Mp4Frag();
 
 mp4frag.on('initialized', (data)=> {
-    assert(data.initialization.length === 800, `${data.initialization.length} !== 800`);
     assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
 mp4frag.on('segment', (data)=> {
     counter++;
+    console.log(`received segment ${counter}`);
 });
 
 mp4frag.on('error', (data)=> {
-    //error is expected when ffmpeg exits
-    //last bit of data will be corrupt
-    console.log('error', data);
+    //error is expected when ffmpeg exits without unpiping
+    console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn('ffmpeg', params, {stdio: ['ignore', 'pipe', 'inherit']});
 
 ffmpeg.on('error', (error) => {
-    console.log(error);
+    console.log('ffmpeg error', error);
 });
 
 ffmpeg.on('exit', (code, signal) => {
+    console.log('ffmpeg exit');
+    assert(counter === count, `${counter} !== ${count}`);
     assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
     console.timeEnd('=====> test5.js');
 });
