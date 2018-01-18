@@ -1,4 +1,6 @@
+node_modules/
 docs/
-.idea/
 tests/
+.idea/
 .travis.yml
+appveyor.yml
