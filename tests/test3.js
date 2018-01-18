@@ -24,7 +24,7 @@ let counter = 0;
 const params = [
     /* log info to console */
     '-loglevel', 'quiet',
-    //'-stats',
+    '-stats',
 
     /* use hardware acceleration if available */
     '-hwaccel', 'auto',
@@ -57,7 +57,7 @@ mp4frag.on('initialized', (data)=> {
 
 mp4frag.on('segment', (data)=> {
     counter++;
-    console.log(`received segment ${counter}`);
+    //console.log(`received segment ${counter}`);
 });
 
 mp4frag.on('error', (data)=> {
