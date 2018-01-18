@@ -9,31 +9,31 @@ environment:
       ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-3.4.1-win64-static.zip
       ffmpeg_zip: ffmpeg-3.4.1-win64-static.zip
       ffmpeg_dir: ffmpeg-3.4.1-win64-static
-      cache: ffmpeg-3.4.1-win64-static.zip
+      #cache: ffmpeg-3.4.1-win64-static.zip
 
     - platform: x64
       nodejs_version: Current
       ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip
       ffmpeg_zip: ffmpeg-latest-win64-static.zip
       ffmpeg_dir: ffmpeg-latest-win64-static
-      cache:
+      #cache:
 
     - platform: x86
       nodejs_version: LTS
       ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-3.4.1-win32-static.zip
       ffmpeg_zip: ffmpeg-3.4.1-win32-static.zip
       ffmpeg_dir: ffmpeg-3.4.1-win32-static
-      cache: ffmpeg-3.4.1-win32-static.zip
+      #cache: ffmpeg-3.4.1-win32-static.zip
 
     - platform: x86
       nodejs_version: Current
       ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip
       ffmpeg_zip: ffmpeg-latest-win32-static.zip
       ffmpeg_dir: ffmpeg-latest-win32-static
-      cache:
+      #cache:
 
 cache:
-  - $env:cache
+  #- $env:cache
   - node_modules
 
 install:
