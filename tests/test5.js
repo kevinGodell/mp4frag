@@ -57,7 +57,6 @@ mp4frag.on('initialized', (data)=> {
 
 mp4frag.on('segment', (data)=> {
     counter++;
-    //console.log(`received segment ${counter}`);
 });
 
 mp4frag.on('error', (data)=> {
@@ -72,7 +71,6 @@ ffmpeg.on('error', (error) => {
 });
 
 ffmpeg.on('exit', (code, signal) => {
-    console.log('ffmpeg exit');
     assert(counter === count, `${counter} !== ${count}`);
     assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
     console.timeEnd('=====> test5.js');
