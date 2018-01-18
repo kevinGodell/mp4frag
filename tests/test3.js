@@ -9,7 +9,7 @@ const Mp4Frag = require('../index');
 
 const { spawn } = require('child_process');
 
-const frameLimit = 100;
+const frameLimit = 200;
 
 const gop = 100;
 
