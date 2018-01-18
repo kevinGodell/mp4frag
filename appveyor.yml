@@ -3,45 +3,38 @@ version: 0.0.12-{build}
 image: Visual Studio 2017
 
 environment:
+  global:
+    ffmpeg_download: https://ffmpeg.zeranoe.com/builds/
   matrix:
     - platform: x64
       nodejs_version: LTS
-      ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-3.4.1-win64-static.zip
-      ffmpeg_zip: ffmpeg-3.4.1-win64-static.zip
-      ffmpeg_dir: ffmpeg-3.4.1-win64-static
-      #cache: ffmpeg-3.4.1-win64-static.zip
+      ffmpeg_version: latest
+      ffmpeg_platform: win64
 
     - platform: x64
       nodejs_version: Current
-      ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip
-      ffmpeg_zip: ffmpeg-latest-win64-static.zip
-      ffmpeg_dir: ffmpeg-latest-win64-static
-      #cache:
+      ffmpeg_version: latest
+      ffmpeg_platform: win64
 
     - platform: x86
       nodejs_version: LTS
-      ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-3.4.1-win32-static.zip
-      ffmpeg_zip: ffmpeg-3.4.1-win32-static.zip
-      ffmpeg_dir: ffmpeg-3.4.1-win32-static
-      #cache: ffmpeg-3.4.1-win32-static.zip
+      ffmpeg_version: latest
+      ffmpeg_platform: win64
 
     - platform: x86
       nodejs_version: Current
-      ffmpeg_url: https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip
-      ffmpeg_zip: ffmpeg-latest-win32-static.zip
-      ffmpeg_dir: ffmpeg-latest-win32-static
-      #cache:
+      ffmpeg_version: latest
+      ffmpeg_platform: win32
 
 cache:
-  #- $env:cache
   - node_modules
 
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm install
-  - ps: Start-FileDownload $env:ffmpeg_url
-  - 7z x %ffmpeg_zip%
-  - PATH=%PATH%;%cd%\%ffmpeg_dir%\bin
+  - ps: Start-FileDownload $env:ffmpeg_url$env:ffmpeg_platform/static/ffmpeg-$env:ffmpeg_version-$env:ffmpeg_platform-static.zip
+  - 7z x ffmpeg-%ffmpeg_version%-%ffmpeg_platform%-static.zip
+  - PATH=%PATH%;%cd%\ffmpeg-%ffmpeg_version%-%ffmpeg_platform%-static\bin
 
 test_script:
   - ffmpeg -version
