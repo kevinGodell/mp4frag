@@ -33,7 +33,7 @@ environment:
       cache:
 
 cache:
-  - %cache%
+  - $env:cache
   - node_modules
 
 install:
