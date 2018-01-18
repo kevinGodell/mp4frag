@@ -1,4 +1,3 @@
-// jshint esversion: 6, globalstrict: true, strict: true, bitwise: true, node: true
 'use strict';
 
 const { Transform } = require('stream');
