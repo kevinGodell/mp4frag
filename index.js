@@ -9,7 +9,7 @@ const { Transform } = require('stream');
  * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
  * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  * @requires stream.Transform
- * @version v0.0.12
+ * @version v0.0.13
  */
 class Mp4Frag extends Transform {
     /**
@@ -23,10 +23,6 @@ class Mp4Frag extends Transform {
      */
     constructor(options, callback) {
         super(options);
-        if (typeof callback === 'function') {
-            this._callback = callback;
-        }
-        this._parseChunk = this._findFtyp;
         if (options) {
             if (options.hasOwnProperty('hlsBase') && options.hlsBase) {
                 const hlsListSize = parseInt(options.hlsListSize);
@@ -55,6 +51,10 @@ class Mp4Frag extends Transform {
                 this._bufferList = [];
             }
         }
+        if (typeof callback === 'function') {
+            this._callback = callback;
+        }
+        this._parseChunk = this._findFtyp;
         return this;
     }
 
