@@ -456,6 +456,14 @@ class Mp4Frag extends Transform {
      * @private
      */
     _flush(callback) {
+        this.resetCache();
+        callback();
+    }
+
+    /**
+     * Clear cached values
+     */
+    resetCache() {
         this._parseChunk = this._findFtyp;
         delete this._mime;
         delete this._initialization;
@@ -477,7 +485,6 @@ class Mp4Frag extends Transform {
         if (this._bufferList) {
             this._bufferList = [];
         }
-        callback();
     }
 }
 
