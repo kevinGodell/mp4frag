@@ -19,7 +19,7 @@ class Mp4Frag extends Transform {
      * @param {Integer} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
      * @param {Integer} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
      * @param {Function} [callback] - Function to be called when segments are parsed from piped data. Must be able to pass 1 parameter that will contain segment buffer.
-     * @returns {Object} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
+     * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
      */
     constructor(options, callback) {
         super(options);
