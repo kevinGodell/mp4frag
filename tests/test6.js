@@ -1,6 +1,6 @@
 'use strict';
 
-console.time('=====> test.js');
+console.time('=====> test6.js');
 
 //const assert = require('assert');
 
@@ -86,7 +86,7 @@ ffmpeg.on('error', (error) => {
 ffmpeg.on('exit', (code, signal) => {
     //assert(counter === count, `${counter} !== ${count}`);
     //assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-    console.timeEnd('=====> test.js');
+    console.timeEnd('=====> test6.js');
 });
 
 ffmpeg.stdio[1].pipe(mp4frag);
