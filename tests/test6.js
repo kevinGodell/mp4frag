@@ -12,13 +12,13 @@ const fs = require('fs');
 
 //const frameLimit = 200;
 
-const gop = 10;
+const gop = 15;
 
 //const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
 
 const scale =  640;
 
-const fps = 10;
+const fps = 15;
 
 let counter = 0;
 
@@ -35,7 +35,7 @@ const params = [
     //'-f', 'lavfi',
     //'-i', 'testsrc=size=1280x720:rate=20',
     '-i',
-    'test.mp4',
+    './in/test.mp4',
 
     /* set output flags */
     '-an',
@@ -57,18 +57,11 @@ const mp4frag = new Mp4Frag();
 mp4frag.on('initialized', (data)=> {
     const writeStream = fs.createWriteStream(`./out/init.mp4`);
     writeStream.end(data.initialization);
-    //writeStream.end();
-    //use file system to save data.initialization as init.mp4
-    console.log(data.initialization);
-    //assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
 mp4frag.on('segment', (data)=> {
-    //use file system to save data as a segment, use the counter variable to make an incremented name such as `seg-${counter}.m4s`
     const writeStream = fs.createWriteStream(`./out/seg-${counter}.m4s`);
     writeStream.end(data);
-    //writeStream.end();
-    console.log(data);
     counter++;
 });
 
