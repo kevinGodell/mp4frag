@@ -12,13 +12,13 @@ const fs = require('fs');
 
 //const frameLimit = 200;
 
-const gop = 15;
+const gop = 900;
 
 //const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
 
 const scale =  640;
 
-const fps = 15;
+const fps = 30;
 
 let counter = 0;
 
@@ -35,7 +35,7 @@ const params = [
     //'-f', 'lavfi',
     //'-i', 'testsrc=size=1280x720:rate=20',
     '-i',
-    './in/test.mp4',
+    './in/5min.mp4',
 
     /* set output flags */
     '-an',
