@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7",
     "preversion": "npm test",
-    "jsdoc": "jsdoc index.js -d docs"
+    "postversion": "npm run doc",
+    "doc": "jsdoc index.js -d docs && git commit -m 'update docs' -- docs"
   },
   "repository": {
     "type": "git",
