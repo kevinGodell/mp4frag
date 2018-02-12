@@ -2,23 +2,19 @@
 
 console.time('=====> test6.js');
 
-//const assert = require('assert');
+const assert = require('assert');
 
 const Mp4Frag = require('../index');
 
 const { spawn } = require('child_process');
 
-const fs = require('fs');
+const frameLimit = 2001;
 
-//const frameLimit = 200;
+const scale =  320;
 
-const gop = 900;
+const fps = 200;
 
-//const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
-
-const scale =  640;
-
-const fps = 30;
+const count = Math.ceil(frameLimit / fps);
 
 let counter = 0;
 
@@ -31,11 +27,12 @@ const params = [
     '-hwaccel', 'auto',
     
     /* use an artificial video input */
-    //'-re',
-    //'-f', 'lavfi',
-    //'-i', 'testsrc=size=1280x720:rate=20',
-    '-i',
-    './in/5min.mp4',
+    /*'-re',
+    '-f', 'lavfi',
+    '-i', 'testsrc=size=1280x720:rate=20',*/
+
+    '-rtsp_transport', 'tcp',
+    '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp',
 
     /* set output flags */
     '-an',
@@ -43,25 +40,23 @@ const params = [
     '-movflags', '+frag_keyframe+empty_moov+default_base_moof',
     '-f', 'mp4',
     '-vf', `fps=${fps},scale=${scale}:-1,format=yuv420p`,
-    //'-frames', frameLimit,
-    '-g', gop,
+    '-frames', frameLimit,
     '-profile:v', 'main',
     '-level', '3.1',
     '-crf', '25',
     '-metadata', 'title=test mp4',
+    '-frag_duration', '1000000',//make ffmpeg create segments that are 1 second duration
+    '-min_frag_duration', '1000000',//make ffmpeg create segments that are 1 second duration
     'pipe:1'
 ];
 
 const mp4frag = new Mp4Frag();
 
 mp4frag.on('initialized', (data)=> {
-    const writeStream = fs.createWriteStream(`./out/init.mp4`);
-    writeStream.end(data.initialization);
+    assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
 mp4frag.on('segment', (data)=> {
-    const writeStream = fs.createWriteStream(`./out/seg-${counter}.m4s`);
-    writeStream.end(data);
     counter++;
 });
 
@@ -77,8 +72,8 @@ ffmpeg.on('error', (error) => {
 });
 
 ffmpeg.on('exit', (code, signal) => {
-    //assert(counter === count, `${counter} !== ${count}`);
-    //assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
+    assert(counter === count, `${counter} !== ${count}`);
+    assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
     console.timeEnd('=====> test6.js');
 });
 

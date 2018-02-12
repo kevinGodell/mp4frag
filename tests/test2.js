@@ -29,7 +29,7 @@ const params = [
     '-hwaccel', 'auto',
     
     /* use an artificial video input */
-    '-re',
+    //'-re',
     '-f', 'lavfi',
     '-i', 'testsrc=size=1280x720:rate=20',
 

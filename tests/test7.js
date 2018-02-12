@@ -1,6 +1,6 @@
 'use strict';
 
-console.time('=====> test4.js');
+console.time('=====> test7.js');
 
 const assert = require('assert');
 
@@ -8,15 +8,13 @@ const Mp4Frag = require('../index');
 
 const { spawn } = require('child_process');
 
-const frameLimit = 200;
+const fs = require('fs');
 
-const gop = 10;
+const count = 20;//expected count of segments
 
-const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
+const fps = 24;//number of frames per second(same as input video) might not be necessary
 
-const scale =  320;
-
-const fps = 10;
+const scale =  640;//used as width of video, height will automatically scale
 
 let counter = 0;
 
@@ -30,31 +28,35 @@ const params = [
     
     /* use an artificial video input */
     //'-re',
-    '-f', 'lavfi',
-    '-i', 'testsrc=size=1280x720:rate=20',
+    '-i', `${__dirname}/in/BigBuckBunny.mp4`,
 
     /* set output flags */
-    '-an',
+    //'-an',
+    '-c:a', 'aac',
     '-c:v', 'libx264',
-    '-movflags', '+frag_keyframe+empty_moov+default_base_moof',
+    '-movflags', '+faststart+frag_keyframe+empty_moov+default_base_moof+omit_tfhd_offset',
     '-f', 'mp4',
     '-vf', `fps=${fps},scale=${scale}:-1,format=yuv420p`,
-    '-frames', frameLimit,
-    '-g', gop,
     '-profile:v', 'main',
     '-level', '3.1',
     '-crf', '25',
     '-metadata', 'title=test mp4',
+    '-reset_timestamps', '1',
+    '-frag_duration', '30000000',//make ffmpeg create segments that are 30 seconds duration
+    '-min_frag_duration', '30000000',//make ffmpeg create segments that are 30 seconds duration
     'pipe:1'
 ];
 
 const mp4frag = new Mp4Frag();
 
 mp4frag.on('initialized', (data)=> {
-    assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+    const writeStream = fs.createWriteStream(`${__dirname}/out/init.mp4`);
+    writeStream.end(data.initialization);
 });
 
 mp4frag.on('segment', (data)=> {
+    const writeStream = fs.createWriteStream(`${__dirname}/out/seg-${counter}.m4s`);
+    writeStream.end(data);
     counter++;
 });
 
@@ -72,7 +74,7 @@ ffmpeg.on('error', (error) => {
 ffmpeg.on('exit', (code, signal) => {
     assert(counter === count, `${counter} !== ${count}`);
     assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-    console.timeEnd('=====> test4.js');
+    console.timeEnd('=====> test7.js');
 });
 
 ffmpeg.stdio[1].pipe(mp4frag);
