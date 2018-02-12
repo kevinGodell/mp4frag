@@ -2,7 +2,6 @@ node_modules/
 docs/
 tests/
 .idea/
-out/*
 .travis.yml
 appveyor.yml
 .jshintrc
