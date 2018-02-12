@@ -28,7 +28,7 @@ const params = [
     
     /* use an artificial video input */
     //'-re',
-    '-i', `${__dirname}/in/BigBuckBunny.mp4`,
+    '-i', `${__dirname}/in/BigBuckBunny63MB.mp4`,
 
     /* set output flags */
     //'-an',
