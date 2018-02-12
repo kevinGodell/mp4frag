@@ -304,7 +304,7 @@ class Mp4Frag extends Transform {
     _moofHunt(chunk) {
         if (this._moofHunts < this._moofHuntsLimit) {
             this._moofHunts++;
-            console.log(`moof hunt attempt number ${this._moofHunts}`);
+            console.warn(`moof hunt attempt number ${this._moofHunts}`);
             const index = chunk.indexOf('moof');
             if (index > 3 && chunk.length > index + 3) {
                 delete this._moofHunts;
@@ -322,28 +322,61 @@ class Mp4Frag extends Transform {
      * @private
      */
     _findMoof(chunk) {
-        const chunkLength = chunk.length;
-        if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
-            //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
-            console.warn('Failed to find MOOF. Starting MOOF hunt.');
-            this._moofHunts = 0;
-            this._moofHuntsLimit = 40;
-            this._parseChunk = this._moofHunt;
-            this._parseChunk(chunk);
-            return;
-        }
-        this._moofLength = chunk.readUInt32BE(0, true);
-        if (this._moofLength < chunkLength) {
-            this._moof = chunk.slice(0, this._moofLength);
-            this._parseChunk = this._findMdat;
-            this._parseChunk(chunk.slice(this._moofLength));
-        } else if (this._moofLength === chunkLength) {
-            this._moof = chunk;
-            this._parseChunk = this._findMdat;
+        if(this._moofBuffer) {
+            this._moofBuffer.push(chunk);
+            const chunkLength = chunk.length;
+            this._moofBufferSize += chunkLength;
+            if (this._moofLength === this._moofBufferSize) {
+                console.log('moof length === moof buffer size');
+                //todo have not had this yet, will have to try different sizes of video and fps etc
+                this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
+                delete this._moofBuffer;
+                delete this._moofBufferSize;
+                this._parseChunk = this._findMdat;
+            } else if (this._moofLength < this._moofBufferSize) {
+                //todo(ne) good, this works
+                this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
+                const sliceIndex = chunkLength - (this._moofBufferSize - this._moofLength);
+                delete this._moofBuffer;
+                delete this._moofBufferSize;
+                this._parseChunk = this._findMdat;
+                this._parseChunk(chunk.slice(sliceIndex));
+            }
         } else {
-            //situation has not occur unless ffmpeg is ended abruptly and data becomes corrupted
-            //log it to console in case it becomes an issue
-            console.warn('mooflength > chunklength');
+            const chunkLength = chunk.length;
+            if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
+                //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
+                const mfraIndex = chunk.indexOf('mfra');
+                if (mfraIndex !== -1) {
+                    console.log(`End of input stream. MFRA was found at ${mfraIndex}. This is expected behavior.`);
+                    return;
+                }
+                console.warn('Failed to find MOOF. Starting MOOF hunt. Ignore this if your file stream input has ended.');
+                this._moofHunts = 0;
+                this._moofHuntsLimit = 40;
+                this._parseChunk = this._moofHunt;
+                this._parseChunk(chunk);
+                return;
+            }
+            this._moofLength = chunk.readUInt32BE(0, true);
+            if (this._moofLength === 0) {
+                throw new Error('Bad data from input stream reports moof length of 0');
+            }
+            if (this._moofLength < chunkLength) {
+                //todo(ne) good, this works
+                this._moof = chunk.slice(0, this._moofLength);
+                this._parseChunk = this._findMdat;
+                this._parseChunk(chunk.slice(this._moofLength));
+            } else if (this._moofLength === chunkLength) {
+                //todo verify this works
+                console.log('moof length === chunk length');
+                this._moof = chunk;
+                this._parseChunk = this._findMdat;
+            } else {
+                //todo(ne) good, this works
+                this._moofBuffer = [chunk];
+                this._moofBufferSize = chunkLength;
+            }
         }
     }
 
@@ -404,19 +437,24 @@ class Mp4Frag extends Transform {
     _findMdat(chunk) {
         if (this._mdatBuffer) {
             this._mdatBuffer.push(chunk);
-            this._mdatBufferSize += chunk.length;
+            const chunkLength = chunk.length;
+            this._mdatBufferSize += chunkLength;
             if (this._mdatLength === this._mdatBufferSize) {
+                //todo(ne) good, this works
                 this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], (this._moofLength + this._mdatLength)));
                 delete this._moof;
                 delete this._mdatBuffer;
                 delete this._mdatBufferSize;
                 this._parseChunk = this._findMoof;
             } else if (this._mdatLength < this._mdatBufferSize) {
+                //todo(ne) good, this works
                 this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], (this._moofLength + this._mdatLength)));
-                const sliceIndex = this._mdatBufferSize - this._mdatLength;
+                const sliceIndex = chunkLength - (this._mdatBufferSize - this._mdatLength);
                 delete this._moof;
                 delete this._mdatBuffer;
                 delete this._mdatBufferSize;
+                delete this._mdatLength;
+                delete this._moofLength;
                 this._parseChunk = this._findMoof;
                 this._parseChunk(chunk.slice(sliceIndex));
             }
@@ -427,17 +465,25 @@ class Mp4Frag extends Transform {
             }
             this._mdatLength = chunk.readUInt32BE(0, true);
             if (this._mdatLength > chunkLength) {
+                //todo(ne) good, this works
                 this._mdatBuffer = [chunk];
                 this._mdatBufferSize = chunkLength;
             } else if (this._mdatLength === chunkLength) {
+                //todo(ne) good, this works
                 this._setSegment(Buffer.concat([this._moof, chunk], (this._moofLength + chunkLength)));
                 delete this._moof;
+                delete this._moofLength;
+                delete this._mdatLength;
                 this._parseChunk = this._findMoof;
             } else {
-                this._setSegment(Buffer.concat([this._moof, chunk.slice(0, this._mdatLength)], (this._moofLength + this._mdatLength)));
+                //todo(ne) good, this works
+                this._setSegment(Buffer.concat([this._moof, chunk], (this._moofLength + this._mdatLength)));
+                const sliceIndex = this._mdatLength;
                 delete this._moof;
+                delete this._moofLength;
+                delete this._mdatLength;
                 this._parseChunk = this._findMoof;
-                this._parseChunk(chunk.slice(this._mdatLength));
+                this._parseChunk(chunk.slice(sliceIndex));
             }
         }
     }
