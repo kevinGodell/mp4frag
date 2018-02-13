@@ -6,7 +6,6 @@ node_js:
 os:
   - linux
   - osx
-sudo: required
 dist: trusty
 cache:
   directories:
