@@ -40,5 +40,6 @@ test_script:
   - node --version
   - npm --version
   - npm test
+  - dir C:\avvm\node
 
 build: off
