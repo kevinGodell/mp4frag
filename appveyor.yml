@@ -24,10 +24,8 @@ install:
   - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_BUILD_NUMBER"
 
 test_script:
-  - ffmpeg -version
   - node --version
   - npm --version
   - npm test
-  - dir C:\avvm\node
 
 build: off
