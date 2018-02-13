@@ -1,27 +1,21 @@
 image: Visual Studio 2017
-
 environment:
   matrix:
     - nodejs_version: 7
     - nodejs_version: LTS
     - nodejs_version: Current
-
 platform:
   - x86
   - x64
-
 cache:
   - node_modules
-
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm install
   - ps: $env:package_version = (Get-Content -Raw -Path package.json | ConvertFrom-Json).version
   - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_BUILD_NUMBER"
-
 test_script:
   - node --version
   - npm --version
   - npm test
-
 build: off
