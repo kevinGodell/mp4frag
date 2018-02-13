@@ -2,8 +2,12 @@ language: node_js
 node_js:
   - node
   - lts/*
+  - 7
 os:
   - linux
   - osx
 sudo: required
 dist: trusty
+cache:
+  directories:
+    - node_modules
