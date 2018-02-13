@@ -1,27 +1,18 @@
 image: Visual Studio 2017
 
 environment:
-  ffmpeg_download: https://ffmpeg.zeranoe.com/builds/
   matrix:
     - platform: x64
       nodejs_version: LTS
-      ffmpeg_version: 3.4.1
-      ffmpeg_platform: win64
 
     - platform: x64
       nodejs_version: Current
-      ffmpeg_version: latest
-      ffmpeg_platform: win64
 
     - platform: x86
       nodejs_version: LTS
-      ffmpeg_version: 3.4.1
-      ffmpeg_platform: win32
 
     - platform: x86
       nodejs_version: Current
-      ffmpeg_version: latest
-      ffmpeg_platform: win32
 
 cache:
   - node_modules
@@ -29,9 +20,6 @@ cache:
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm install
-  - ps: Start-FileDownload $env:ffmpeg_download$env:ffmpeg_platform/static/ffmpeg-$env:ffmpeg_version-$env:ffmpeg_platform-static.zip
-  - 7z x ffmpeg-%ffmpeg_version%-%ffmpeg_platform%-static.zip
-  - PATH=%PATH%;%cd%\ffmpeg-%ffmpeg_version%-%ffmpeg_platform%-static\bin
   - ps: $env:package_version = (Get-Content -Raw -Path package.json | ConvertFrom-Json).version
   - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_REPO_BRANCH-$env:APPVEYOR_BUILD_NUMBER"
 

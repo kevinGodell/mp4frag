@@ -6,6 +6,8 @@ const assert = require('assert');
 
 const Mp4Frag = require('../index');
 
+const ffmpegPath = require('ffmpeg-static').path;
+
 const { spawn } = require('child_process');
 
 const frameLimit = 200;
@@ -63,7 +65,7 @@ mp4frag.on('error', (data)=> {
     console.log('mp4frag error', data);
 });
 
-const ffmpeg = spawn('ffmpeg', params, {stdio: ['ignore', 'pipe', 'inherit']});
+const ffmpeg = spawn(ffmpegPath, params, {stdio: ['ignore', 'pipe', 'inherit']});
 
 ffmpeg.on('error', (error) => {
     console.log('ffmpeg error', error);
