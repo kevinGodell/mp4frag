@@ -383,7 +383,7 @@ class Mp4Frag extends Transform {
     _setSegment(chunk) {
         this._segment = chunk;
         const currentTime = Date.now();
-        this._duration = (currentTime - this._timestamp) / 1000;
+        this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
             this._hlsList.push({sequence: String(this._sequence++), segment: this._segment, duration: this._duration});
