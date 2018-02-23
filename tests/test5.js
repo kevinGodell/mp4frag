@@ -6,7 +6,7 @@ const assert = require('assert');
 
 const Mp4Frag = require('../index');
 
-const ffmpegPath = require('ffmpeg-static').path;
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 
 const { spawn } = require('child_process');
 
