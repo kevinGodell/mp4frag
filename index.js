@@ -350,10 +350,10 @@ class Mp4Frag extends Transform {
                 //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
                 const mfraIndex = chunk.indexOf('mfra');
                 if (mfraIndex !== -1) {
-                    console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
+                    //console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
                     return;
                 }
-                console.warn('Failed to find MOOF. Starting MOOF hunt. Ignore this if your file stream input has ended.');
+                //console.warn('Failed to find MOOF. Starting MOOF hunt. Ignore this if your file stream input has ended.');
                 this._moofHunts = 0;
                 this._moofHuntsLimit = 40;
                 this._parseChunk = this._moofHunt;
