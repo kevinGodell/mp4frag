@@ -9,7 +9,6 @@ const { Transform } = require('stream');
  * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov</i></b> to generate a fmp4
  * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  * @requires stream.Transform
- * @version v0.0.13
  */
 class Mp4Frag extends Transform {
     /**
