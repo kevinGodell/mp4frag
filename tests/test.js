@@ -60,9 +60,9 @@ mp4frag.on('segment', (data)=> {
     counter++;
 });
 
-mp4frag.on('error', (data)=> {
+mp4frag.on('error', (err)=> {
     //error is expected when ffmpeg exits without unpiping
-    console.log('mp4frag error', data);
+    console.log('mp4frag error', err.message);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, {stdio: ['ignore', 'pipe', 'inherit']});
