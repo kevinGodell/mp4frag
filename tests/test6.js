@@ -29,12 +29,12 @@ const params = [
     '-hwaccel', 'auto',
     
     /* use an artificial video input */
-    /*'-re',
+    //'-re',
     '-f', 'lavfi',
-    '-i', 'testsrc=size=1280x720:rate=20',*/
+    '-i', 'testsrc=size=1280x720:rate=20',
 
-    '-rtsp_transport', 'tcp',
-    '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp',
+    /*'-rtsp_transport', 'tcp',
+    '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp',*/
 
     /* set output flags */
     '-an',
