@@ -283,7 +283,7 @@ class Mp4Frag extends Transform {
         if (this._hlsList) {
             let m3u8 = '#EXTM3U\n';
             m3u8 += '#EXT-X-VERSION:7\n';
-            m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
+            //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
             m3u8 += `#EXT-X-TARGETDURATION:0\n`;
             m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
@@ -397,7 +397,7 @@ class Mp4Frag extends Transform {
             }
             let m3u8 = '#EXTM3U\n';
             m3u8 += '#EXT-X-VERSION:7\n';
-            m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
+            //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
             m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
             m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
