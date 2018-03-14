@@ -284,7 +284,7 @@ class Mp4Frag extends Transform {
             let m3u8 = '#EXTM3U\n';
             m3u8 += '#EXT-X-VERSION:7\n';
             //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
-            m3u8 += `#EXT-X-TARGETDURATION:1\n`;
+            m3u8 += `#EXT-X-TARGETDURATION:0\n`;
             m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
             this._m3u8 = m3u8;
