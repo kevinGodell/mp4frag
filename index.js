@@ -307,7 +307,7 @@ class Mp4Frag extends Transform {
     _moofHunt(chunk) {
         if (this._moofHunts < this._moofHuntsLimit) {
             this._moofHunts++;
-            console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
+            //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
             const index = chunk.indexOf('moof');
             if (index > 3 && chunk.length > index + 3) {
                 delete this._moofHunts;
