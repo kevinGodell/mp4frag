@@ -15,8 +15,9 @@ class Mp4Frag extends Transform {
      * @constructor
      * @param {Object} [options] - Configuration options.
      * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist.
-     * @param {Integer} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
-     * @param {Integer} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
+     * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
+     * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false;
+     * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
      * @param {Function} [callback] - Function to be called when segments are parsed from piped data. Must be able to pass 1 parameter that will contain segment buffer.
      * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
      */
@@ -25,6 +26,7 @@ class Mp4Frag extends Transform {
         if (options) {
             if (options.hasOwnProperty('hlsBase') && options.hlsBase) {
                 const hlsListSize = parseInt(options.hlsListSize);
+                this._hlsListInit = options.hlsListInit && options.hlsListInit === true ? true : false;
                 if (isNaN(hlsListSize)) {
                     this._hlsListSize = 4;
                 } else if (hlsListSize < 2) {
@@ -280,7 +282,7 @@ class Mp4Frag extends Transform {
         index += 5;
         this._mime = `video/mp4; codecs="avc1.${this._initialization.slice(index, index + 3).toString('hex').toUpperCase()}${audioString}"`;
         this._timestamp = Date.now();
-        if (this._hlsList) {
+        if (this._hlsList && this._hlsListInit) {
             let m3u8 = '#EXTM3U\n';
             m3u8 += '#EXT-X-VERSION:7\n';
             //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
