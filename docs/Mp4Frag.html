@@ -176,7 +176,7 @@
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">Number</span>
 
 
             
@@ -203,13 +203,46 @@
 
         <tr>
             
+                <td class="name"><code>hlsListInit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false;</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>bufferListSize</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Integer</span>
+<span class="param-type">Number</span>
 
 
             
@@ -310,7 +343,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line23">line 23</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line24">line 24</a>
     </li></ul></dd>
     
 
@@ -433,9 +466,7 @@
 
             
 
-            <td class="description last">- Returns the <a href="Mp4Frag.html#initialization">Mp4Frag.initialization</a> and <a href="Mp4Frag.html#bufferList">Mp4Frag.bufferList</a> concatenated as a Buffer.
-<br/>
-- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the <a href="Mp4Frag.html#initialization">Mp4Frag.initialization</a> and <a href="Mp4Frag.html#bufferList">Mp4Frag.bufferList</a> concatenated as a Buffer.<br/>- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -474,7 +505,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line182">line 182</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line184">line 184</a>
     </li></ul></dd>
     
 
@@ -545,9 +576,7 @@
 
             
 
-            <td class="description last">- Returns the buffered mp4 segments as an Array.
-<br/>
-- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the buffered mp4 segments as an Array.<br/>- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -586,7 +615,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line152">line 152</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line154">line 154</a>
     </li></ul></dd>
     
 
@@ -657,9 +686,7 @@
 
             
 
-            <td class="description last">- Returns the <a href="Mp4Frag.html#bufferList">Mp4Frag.bufferList</a> concatenated as a Buffer.
-<br/>
-- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the <a href="Mp4Frag.html#bufferList">Mp4Frag.bufferList</a> concatenated as a Buffer.<br/>- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -698,7 +725,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line167">line 167</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line169">line 169</a>
     </li></ul></dd>
     
 
@@ -769,9 +796,7 @@
 
             
 
-            <td class="description last">- Returns the duration of latest Mp4 segment as a Float(seconds).
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the duration of latest Mp4 segment as a Float(seconds).<br/>- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -810,7 +835,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line116">line 116</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -881,9 +906,7 @@
 
             
 
-            <td class="description last">- Returns the mp4 initialization fragment as a Buffer.
-<br/>
-- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
+            <td class="description last">- Returns the mp4 initialization fragment as a Buffer.<br/>- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
         </tr>
 
     
@@ -922,7 +945,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line80">line 80</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line82">line 82</a>
     </li></ul></dd>
     
 
@@ -993,9 +1016,7 @@
 
             
 
-            <td class="description last">- Returns the fmp4 HLS m3u8 playlist as a String.
-<br/>
-- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
+            <td class="description last">- Returns the fmp4 HLS m3u8 playlist as a String.<br/>- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
         </tr>
 
     
@@ -1034,7 +1055,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line128">line 128</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -1105,9 +1126,7 @@
 
             
 
-            <td class="description last">- Returns the mime codec information as a String.
-<br/>
-- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
+            <td class="description last">- Returns the mime codec information as a String.<br/>- Returns <b>Null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
         </tr>
 
     
@@ -1146,7 +1165,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line68">line 68</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line70">line 70</a>
     </li></ul></dd>
     
 
@@ -1217,9 +1236,7 @@
 
             
 
-            <td class="description last">- Returns the latest Mp4 segment as a Buffer.
-<br/>
-- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the latest Mp4 segment as a Buffer.<br/>- Returns <b>Null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -1258,7 +1275,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line92">line 92</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line94">line 94</a>
     </li></ul></dd>
     
 
@@ -1329,9 +1346,7 @@
 
             
 
-            <td class="description last">- Returns the latest sequence of the fmp4 HLS m3u8 playlist as an Integer.
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the latest sequence of the fmp4 HLS m3u8 playlist as an Integer.<br/>- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -1370,7 +1385,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line140">line 140</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -1441,9 +1456,7 @@
 
             
 
-            <td class="description last">- Returns the timestamp of the latest Mp4 segment as an Integer(milliseconds).
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
+            <td class="description last">- Returns the timestamp of the latest Mp4 segment as an Integer(milliseconds).<br/>- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
         </tr>
 
     
@@ -1482,7 +1495,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line104">line 104</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -1566,9 +1579,7 @@
 
             
 
-            <td class="description last">- Returns the Mp4 segment that corresponds to the HLS sequence number as a Buffer.
-<br/>
-- Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence number.</td>
+            <td class="description last">- Returns the Mp4 segment that corresponds to the HLS sequence number as a Buffer.<br/>- Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence number.</td>
         </tr>
 
     
@@ -1609,7 +1620,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line196">line 196</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line198">line 198</a>
     </li></ul></dd>
     
 
@@ -1713,7 +1724,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line510">line 510</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line512">line 512</a>
     </li></ul></dd>
     
 
@@ -1940,7 +1951,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line292">line 292</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line294">line 294</a>
     </li></ul></dd>
     
 
@@ -2088,7 +2099,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line423">line 423</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line425">line 425</a>
     </li></ul></dd>
     
 
@@ -2134,7 +2145,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Mar 16 2018 03:23:01 GMT-0500 (CDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Mar 16 2018 13:26:51 GMT-0500 (Central Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
