@@ -38,6 +38,7 @@
   "homepage": "https://github.com/kevinGodell/mp4frag#readme",
   "devDependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.13",
+    "ffmpeg-static": "^2.2.0",
     "jsdoc": "^3.5.5"
   }
 }
