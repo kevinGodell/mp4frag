@@ -9,17 +9,21 @@ Currently being used in a media source extension project @ https://github.com/ke
 # Options for a new instance of Mp4Frag
 
 #### bufferListSize: unsigned int (2 - 10), *setting this value will store specified number of media segments in the buffer*
-`const mp4frag = new Mp4Frag({bufferListSize: 3});`
+```javascript
+const mp4frag = new Mp4Frag({bufferListSize: 3});
+```
 
 #### hlsListSize: unsigned int (2 - 10), *setting this along with hlsBase will generate a live fmp4 HLS m3u8 playlist*
 #### hlsBase: 'string', *setting this along with hlsListSize will generate a live fmp4 HLS m3u8 playlist*
-`const mp4frag = new Mp4Frag({hlsListSize: 4, hlsBase: 'myString'});`
+```javascript
+const mp4frag = new Mp4Frag({hlsListSize: 4, hlsBase: 'myString'});
+```
 
 # Possible usage examples
 
 ## Example 1: *Generate a live fmp4 HLS m3u8 playlist with ffmpeg*
 
-```
+```javascript
 const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
@@ -53,7 +57,7 @@ pool7.m4s
 pool8.m4s
 ```
 #### Setting up some server routes to respond to http requests for playing live HLS feed
-```
+```javascript
 app.get('/pool.m3u8', (req, res) => {
     if (mp4frag.m3u8) {
         res.writeHead(200, {'Content-Type': 'application/vnd.apple.mpegurl'});
@@ -85,7 +89,7 @@ app.get('/pool:id.m4s', (req, res) => {
 See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/compare.js
 ## Example 2: *Create a buffer of past video to store for later recording*
 
-```
+```javascript
 const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
@@ -104,7 +108,7 @@ ffmpeg.stdio[1].pipe(mp4frag);
 ```
 ##### Moments later, some triggering event occurs such as motion detection and we need to record video including 6 seconds of buffered video from before motion was detected
 
-```
+```javascript
 const fs = require('fs');
 
 const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
