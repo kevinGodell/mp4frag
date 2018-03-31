@@ -16,7 +16,7 @@ class Mp4Frag extends Transform {
      * @param {Object} [options] - Configuration options.
      * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist.
      * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
-     * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false;
+     * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false.
      * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
      * @param {Function} [callback] - Function to be called when segments are parsed from piped data. Must be able to pass 1 parameter that will contain segment buffer.
      * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
@@ -24,9 +24,9 @@ class Mp4Frag extends Transform {
     constructor(options, callback) {
         super(options);
         if (options) {
-            if (options.hasOwnProperty('hlsBase') && options.hlsBase) {
+            if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
                 const hlsListSize = parseInt(options.hlsListSize);
-                this._hlsListInit = options.hlsListInit && options.hlsListInit === true ? true : false;
+                this._hlsListInit = options.hlsListInit === true ? true : false;
                 if (isNaN(hlsListSize)) {
                     this._hlsListSize = 4;
                 } else if (hlsListSize < 2) {
@@ -286,7 +286,7 @@ class Mp4Frag extends Transform {
             let m3u8 = '#EXTM3U\n';
             m3u8 += '#EXT-X-VERSION:7\n';
             //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
-            m3u8 += `#EXT-X-TARGETDURATION:0\n`;
+            m3u8 += `#EXT-X-TARGETDURATION:1\n`;
             m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
             this._m3u8 = m3u8;
