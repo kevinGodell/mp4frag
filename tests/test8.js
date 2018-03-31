@@ -1,6 +1,6 @@
 'use strict';
 
-console.time('=====> test5.js');
+console.time('=====> test8.js');
 
 const assert = require('assert');
 
@@ -10,15 +10,13 @@ const ffmpegPath = require('ffmpeg-static').path;
 
 const { spawn } = require('child_process');
 
-const frameLimit = 200;
+const count = 1;//expected count of segments
 
-const gop = 10;
+const frames = 1;
 
-const count = Math.ceil(frameLimit/gop);//expected number of segments to be cut from ffmpeg
+const fps = 24;//number of frames per second(same as input video) might not be necessary
 
-const scale =  640;
-
-const fps = 100;
+const scale =  640;//used as width of video, height will automatically scale
 
 let counter = 0;
 
@@ -32,28 +30,30 @@ const params = [
     
     /* use an artificial video input */
     //'-re',
-    '-f', 'lavfi',
-    '-i', 'testsrc=size=1280x720:rate=20',
+    '-i', `${__dirname}/in/BigBuckBunny63MB.mp4`,
 
     /* set output flags */
-    '-an',
+    //'-an',
+    '-c:a', 'aac',
     '-c:v', 'libx264',
-    '-movflags', '+frag_keyframe+empty_moov+default_base_moof',
+    '-movflags', '+faststart+frag_keyframe+empty_moov+default_base_moof+omit_tfhd_offset',
     '-f', 'mp4',
     '-vf', `fps=${fps},scale=${scale}:-1,format=yuv420p`,
-    '-frames', frameLimit,
-    '-g', gop,
     '-profile:v', 'main',
     '-level', '3.1',
     '-crf', '25',
     '-metadata', 'title=test mp4',
+    '-reset_timestamps', '1',
+    '-frag_duration', '3000000',//make ffmpeg create segments that are 3 seconds duration
+    '-min_frag_duration', '3000000',//make ffmpeg create segments that are 3 seconds duration
+    '-frames', frames,
     'pipe:1'
 ];
 
-const mp4frag = new Mp4Frag();
+const mp4frag = new Mp4Frag({hlsBase: 'test', hlsListInit: true});
 
 mp4frag.once('initialized', (data)=> {
-    assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+    assert(mp4frag.m3u8 === `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test.mp4"\n`, 'Unexpected m3u8 data');
 });
 
 mp4frag.on('segment', (data)=> {
@@ -74,7 +74,7 @@ ffmpeg.once('error', (error) => {
 ffmpeg.once('exit', (code, signal) => {
     assert(counter === count, `${counter} !== ${count}`);
     assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-    console.timeEnd('=====> test5.js');
+    console.timeEnd('=====> test8.js');
 });
 
 ffmpeg.stdio[1].pipe(mp4frag);

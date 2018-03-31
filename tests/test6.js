@@ -54,7 +54,7 @@ const params = [
 
 const mp4frag = new Mp4Frag();
 
-mp4frag.on('initialized', (data)=> {
+mp4frag.once('initialized', (data)=> {
     assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
@@ -62,18 +62,18 @@ mp4frag.on('segment', (data)=> {
     counter++;
 });
 
-mp4frag.on('error', (data)=> {
+mp4frag.once('error', (data)=> {
     //error is expected when ffmpeg exits without unpiping
     console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, {stdio: ['ignore', 'pipe', 'inherit']});
 
-ffmpeg.on('error', (error) => {
+ffmpeg.once('error', (error) => {
     console.log('ffmpeg error', error);
 });
 
-ffmpeg.on('exit', (code, signal) => {
+ffmpeg.once('exit', (code, signal) => {
     assert(counter === count, `${counter} !== ${count}`);
     assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
     console.timeEnd('=====> test6.js');
