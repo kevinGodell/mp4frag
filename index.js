@@ -26,7 +26,7 @@ class Mp4Frag extends Transform {
         if (options) {
             if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
                 const hlsListSize = parseInt(options.hlsListSize);
-                this._hlsListInit = options.hlsListInit === true ? true : false;
+                this._hlsListInit = options.hlsListInit === true;
                 if (isNaN(hlsListSize)) {
                     this._hlsListSize = 4;
                 } else if (hlsListSize < 2) {
@@ -385,6 +385,7 @@ class Mp4Frag extends Transform {
     /**
      * Process current segment.
      * @fires Mp4Frag#segment
+     * @param chunk {Buffer}
      * @private
      */
     _setSegment(chunk) {
