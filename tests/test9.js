@@ -1,6 +1,6 @@
 'use strict';
 
-console.time('=====> test8.js');
+console.time('=====> test9.js');
 
 const assert = require('assert');
 
@@ -31,11 +31,11 @@ mp4frag.once('error', (data) => {
 
 const readStream = fs.createReadStream(inputFile);
 
-readStream.on('error', (err) => {
+readStream.once('error', (err) => {
     console.error('unable to read file', err);
 });
 
-readStream.on('end', () => {
+readStream.once('end', () => {
     assert(counter === 47, 'Expected 47 segments.');
 });
 
