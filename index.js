@@ -298,8 +298,9 @@ class Mp4Frag extends Transform {
          * @property {Object} Object
          * @property {String} Object.mime - [Mp4Frag.mime]{@link Mp4Frag#mime}
          * @property {Buffer} Object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
+         * @property {String} Object.m3u8 - [Mp4Frag.m3u8]{@link Mp4Frag#m3u8}
          */
-        this.emit('initialized', {mime: this._mime, initialization: this._initialization});
+        this.emit('initialized', {mime: this._mime, initialization: this._initialization, m3u8: this._m3u8 || null});
     }
 
     /**
