@@ -5,3 +5,4 @@ tests/
 .travis.yml
 appveyor.yml
 .jshintrc
+mp4frag.iml
