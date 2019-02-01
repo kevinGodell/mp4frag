@@ -2,6 +2,14 @@
 
 const { Transform } = require('stream');
 
+const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]);// ftyp
+const _MOOV = Buffer.from([0x6D, 0x6F, 0x6F, 0x76]);// moov
+const _MOOF = Buffer.from([0x6D, 0x6F, 0x6F, 0x66]);// moof
+const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]);// mfra
+const _MDAT = Buffer.from([0x6D, 0x64, 0x61, 0x74]);// mdat
+const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]);// mp4a
+const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]);// avcC
+
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
  * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
@@ -212,7 +220,7 @@ class Mp4Frag extends Transform {
      */
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
-        if (chunkLength < 8 || chunk[4] !== 0x66 || chunk[5] !== 0x74 || chunk[6] !== 0x79 || chunk[7] !== 0x70) {
+        if (chunkLength < 8 || chunk.indexOf(_FTYP) !== 4) {
             this.emit('error', new Error('FTYP not found.'));
             return;
         }
@@ -238,7 +246,7 @@ class Mp4Frag extends Transform {
      */
     _findMoov(chunk) {
         const chunkLength = chunk.length;
-        if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x76) {
+        if (chunkLength < 8 || chunk.indexOf(_MOOV) !== 4) {
             this.emit('error', new Error('MOOV not found.'));
             return;
         }
@@ -271,10 +279,10 @@ class Mp4Frag extends Transform {
     _parseMoov(value) {
         this._initialization = value;
         let audioString = '';
-        if (this._initialization.indexOf('mp4a') !== -1) {
+        if (this._initialization.indexOf(_MP4A) !== -1) {
             audioString = ', mp4a.40.2';
         }
-        let index = this._initialization.indexOf('avcC');
+        let index = this._initialization.indexOf(_AVCC);
         if (index === -1) {
             this.emit('error', new Error('Codec info not found.'));
             return;
@@ -311,7 +319,7 @@ class Mp4Frag extends Transform {
         if (this._moofHunts < this._moofHuntsLimit) {
             this._moofHunts++;
             //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
-            const index = chunk.indexOf('moof');
+            const index = chunk.indexOf(_MOOF);
             if (index > 3 && chunk.length > index + 3) {
                 delete this._moofHunts;
                 delete this._moofHuntsLimit;
@@ -349,9 +357,9 @@ class Mp4Frag extends Transform {
             }
         } else {
             const chunkLength = chunk.length;
-            if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
+            if (chunkLength < 8 || chunk.indexOf(_MOOF) !== 4) {
                 //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
-                const mfraIndex = chunk.indexOf('mfra');
+                const mfraIndex = chunk.indexOf(_MFRA);
                 if (mfraIndex !== -1) {
                     //console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
                     return;
@@ -464,7 +472,7 @@ class Mp4Frag extends Transform {
             }
         } else {
             const chunkLength = chunk.length;
-            if (chunkLength < 8 || chunk[4] !== 0x6D || chunk[5] !== 0x64 || chunk[6] !== 0x61 || chunk[7] !== 0x74) {
+            if (chunkLength < 8 || chunk.indexOf(_MDAT) !== 4) {
                 this.emit('error', new Error('MDAT not found.'));
                 return;
             }
