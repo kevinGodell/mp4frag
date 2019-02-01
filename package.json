@@ -39,5 +39,10 @@
   "devDependencies": {
     "ffmpeg-static": "^2.4.0",
     "jsdoc": "^3.5.5"
-  }
+  },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ]
 }
