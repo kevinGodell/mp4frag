@@ -234,7 +234,7 @@ class Mp4Frag extends Transform {
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk.indexOf(_FTYP) !== 4) {
-            this.emit('error', new Error('FTYP not found.'));
+            this.emit('error', new Error(`${_FTYP.toString()} not found.`));
             return;
         }
         this._ftypLength = chunk.readUInt32BE(0, true);
@@ -248,7 +248,7 @@ class Mp4Frag extends Transform {
         } else {
             //should not be possible to get here because ftyp is approximately 24 bytes
             //will have to buffer this chunk and wait for rest of it on next pass
-            this.emit('error', new Error('ftypLength > chunkLength'));
+            this.emit('error', new Error(`ftypLength:${this._ftypLength} > chunkLength:${chunkLength}`));
             return;
         }
     }
@@ -260,7 +260,7 @@ class Mp4Frag extends Transform {
     _findMoov(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength < 8 || chunk.indexOf(_MOOV) !== 4) {
-            this.emit('error', new Error('MOOV not found.'));
+            this.emit('error', new Error(`${_MOOV.toString()} not found.`));
             return;
         }
         const moovLength = chunk.readUInt32BE(0, true);
@@ -279,7 +279,7 @@ class Mp4Frag extends Transform {
             //probably should not arrive here here because moov is typically < 800 bytes
             //will have to store chunk until size is big enough to have entire moov piece
             //ffmpeg may have crashed before it could output moov and got us here
-            this.emit('error', new Error('moovLength > chunkLength'));
+            this.emit('error', new Error(`moovLength:${moovLength} > chunkLength:${chunkLength}`));
             return;
         }
     }
@@ -297,7 +297,7 @@ class Mp4Frag extends Transform {
         }
         let index = this._initialization.indexOf(_AVCC);
         if (index === -1) {
-            this.emit('error', new Error('Codec info not found.'));
+            this.emit('error', new Error(`${_AVCC.toString()} codec info not found.`));
             return;
         }
         index += 5;
@@ -340,7 +340,7 @@ class Mp4Frag extends Transform {
                 this._parseChunk(chunk.slice(index - 4));
             }
         } else {
-            this.emit('error', new Error(`MOOF hunt failed after ${this._moofHunts} attempts.`));
+            this.emit('error', new Error(`${_MOOF.toString()} hunt failed after ${this._moofHunts} attempts.`));
             return;
         }
     }
@@ -386,7 +386,7 @@ class Mp4Frag extends Transform {
             }
             this._moofLength = chunk.readUInt32BE(0, true);
             if (this._moofLength === 0) {
-                this.emit('error', new Error('Bad data from input stream reports moof length of 0.'));
+                this.emit('error', new Error(`Bad data from input stream reports ${_MOOF.toString()} length of 0.`));
                 return;
             }
             if (this._moofLength < chunkLength) {
@@ -486,7 +486,7 @@ class Mp4Frag extends Transform {
         } else {
             const chunkLength = chunk.length;
             if (chunkLength < 8 || chunk.indexOf(_MDAT) !== 4) {
-                this.emit('error', new Error('MDAT not found.'));
+                this.emit('error', new Error(`${_MDAT.toString()} not found.`));
                 return;
             }
             this._mdatLength = chunk.readUInt32BE(0, true);
