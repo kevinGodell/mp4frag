@@ -32,7 +32,7 @@ class Mp4Frag extends Transform {
     constructor(options, callback) {
         super(options);
         if (options) {
-            if (typeof options.hlsBase === 'string' && /^[a-zA-Z0-9]+$/i.exec(options.hlsBase)) {
+            if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
                 const hlsListSize = parseInt(options.hlsListSize);
                 this._hlsListInit = options.hlsListInit === true;
                 if (isNaN(hlsListSize)) {
@@ -46,7 +46,8 @@ class Mp4Frag extends Transform {
                 }
                 this._hlsList = [];
                 this._hlsBase = options.hlsBase;
-                this._sequence = 0;
+                this._sequence = -1;
+                this._sequenceRegex = new RegExp(`^${this._hlsBase}(?<sequence>\\d+).m4s\$`,'i');
             }
             if (options.hasOwnProperty('bufferListSize')) {
                 const bufferListSize = parseInt(options.bufferListSize);
@@ -206,12 +207,24 @@ class Mp4Frag extends Transform {
     getHlsSegment(sequence) {
         if (sequence && this._hlsList && this._hlsList.length > 0) {
             for (let i = 0; i < this._hlsList.length; i++) {
-                if (this._hlsList[i].sequence === sequence) {
+                if (this._hlsList[i].sequence === Number.parseInt(sequence)) {
                     return this._hlsList[i].segment;
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * @param {String} namedSequence
+     * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
+     * <br/>
+     * - Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence name.
+     * @returns {Buffer}
+     */
+    getHlsNamedSegment(namedSequence) {
+        const regexResult = namedSequence.match(this._sequenceRegex);
+        return regexResult ? this.getHlsSegment(regexResult.groups.sequence) : null;
     }
 
     /**
@@ -403,7 +416,7 @@ class Mp4Frag extends Transform {
         this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
-            this._hlsList.push({sequence: String(this._sequence++), segment: this._segment, duration: this._duration});
+            this._hlsList.push({sequence: ++this._sequence/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
             while (this._hlsList.length > this._hlsListSize) {
                 this._hlsList.shift();
             }
@@ -536,7 +549,7 @@ class Mp4Frag extends Transform {
         delete this._m3u8;
         if (this._hlsList) {
             this._hlsList = [];
-            this._sequence = 0;
+            this._sequence = -1;
         }
         if (this._bufferList) {
             this._bufferList = [];
