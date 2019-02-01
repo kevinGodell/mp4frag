@@ -30,6 +30,14 @@
 
 const { Transform } = require('stream');
 
+const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]);// ftyp
+const _MOOV = Buffer.from([0x6D, 0x6F, 0x6F, 0x76]);// moov
+const _MOOF = Buffer.from([0x6D, 0x6F, 0x6F, 0x66]);// moof
+const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]);// mfra
+const _MDAT = Buffer.from([0x6D, 0x64, 0x61, 0x74]);// mdat
+const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]);// mp4a
+const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]);// avcC
+
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
  * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
@@ -66,7 +74,8 @@ class Mp4Frag extends Transform {
                 }
                 this._hlsList = [];
                 this._hlsBase = options.hlsBase;
-                this._sequence = 0;
+                this._sequence = -1;
+                this._sequenceRegex = new RegExp(`^${this._hlsBase}(?&lt;sequence>\\d+).m4s\$`,'i');
             }
             if (options.hasOwnProperty('bufferListSize')) {
                 const bufferListSize = parseInt(options.bufferListSize);
@@ -226,7 +235,7 @@ class Mp4Frag extends Transform {
     getHlsSegment(sequence) {
         if (sequence &amp;&amp; this._hlsList &amp;&amp; this._hlsList.length > 0) {
             for (let i = 0; i &lt; this._hlsList.length; i++) {
-                if (this._hlsList[i].sequence === sequence) {
+                if (this._hlsList[i].sequence === Number.parseInt(sequence)) {
                     return this._hlsList[i].segment;
                 }
             }
@@ -235,12 +244,24 @@ class Mp4Frag extends Transform {
     }
 
     /**
+     * @param {String} namedSequence
+     * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
+     * &lt;br/>
+     * - Returns &lt;b>Null&lt;/b> if there is no Mp4 segment that corresponds to sequence name.
+     * @returns {Buffer}
+     */
+    getHlsNamedSegment(namedSequence) {
+        const regexResult = namedSequence.match(this._sequenceRegex);
+        return regexResult ? this.getHlsSegment(regexResult.groups.sequence) : null;
+    }
+
+    /**
      * Search buffer for ftyp.
      * @private
      */
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
-        if (chunkLength &lt; 8 || chunk[4] !== 0x66 || chunk[5] !== 0x74 || chunk[6] !== 0x79 || chunk[7] !== 0x70) {
+        if (chunkLength &lt; 8 || chunk.indexOf(_FTYP) !== 4) {
             this.emit('error', new Error('FTYP not found.'));
             return;
         }
@@ -266,7 +287,7 @@ class Mp4Frag extends Transform {
      */
     _findMoov(chunk) {
         const chunkLength = chunk.length;
-        if (chunkLength &lt; 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x76) {
+        if (chunkLength &lt; 8 || chunk.indexOf(_MOOV) !== 4) {
             this.emit('error', new Error('MOOV not found.'));
             return;
         }
@@ -299,10 +320,10 @@ class Mp4Frag extends Transform {
     _parseMoov(value) {
         this._initialization = value;
         let audioString = '';
-        if (this._initialization.indexOf('mp4a') !== -1) {
+        if (this._initialization.indexOf(_MP4A) !== -1) {
             audioString = ', mp4a.40.2';
         }
-        let index = this._initialization.indexOf('avcC');
+        let index = this._initialization.indexOf(_AVCC);
         if (index === -1) {
             this.emit('error', new Error('Codec info not found.'));
             return;
@@ -339,7 +360,7 @@ class Mp4Frag extends Transform {
         if (this._moofHunts &lt; this._moofHuntsLimit) {
             this._moofHunts++;
             //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
-            const index = chunk.indexOf('moof');
+            const index = chunk.indexOf(_MOOF);
             if (index > 3 &amp;&amp; chunk.length > index + 3) {
                 delete this._moofHunts;
                 delete this._moofHuntsLimit;
@@ -377,9 +398,9 @@ class Mp4Frag extends Transform {
             }
         } else {
             const chunkLength = chunk.length;
-            if (chunkLength &lt; 8 || chunk[4] !== 0x6D || chunk[5] !== 0x6F || chunk[6] !== 0x6F || chunk[7] !== 0x66) {
+            if (chunkLength &lt; 8 || chunk.indexOf(_MOOF) !== 4) {
                 //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
-                const mfraIndex = chunk.indexOf('mfra');
+                const mfraIndex = chunk.indexOf(_MFRA);
                 if (mfraIndex !== -1) {
                     //console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
                     return;
@@ -423,7 +444,7 @@ class Mp4Frag extends Transform {
         this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
-            this._hlsList.push({sequence: String(this._sequence++), segment: this._segment, duration: this._duration});
+            this._hlsList.push({sequence: ++this._sequence/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
             while (this._hlsList.length > this._hlsListSize) {
                 this._hlsList.shift();
             }
@@ -492,7 +513,7 @@ class Mp4Frag extends Transform {
             }
         } else {
             const chunkLength = chunk.length;
-            if (chunkLength &lt; 8 || chunk[4] !== 0x6D || chunk[5] !== 0x64 || chunk[6] !== 0x61 || chunk[7] !== 0x74) {
+            if (chunkLength &lt; 8 || chunk.indexOf(_MDAT) !== 4) {
                 this.emit('error', new Error('MDAT not found.'));
                 return;
             }
@@ -556,7 +577,7 @@ class Mp4Frag extends Transform {
         delete this._m3u8;
         if (this._hlsList) {
             this._hlsList = [];
-            this._sequence = 0;
+            this._sequence = -1;
         }
         if (this._bufferList) {
             this._bufferList = [];
@@ -581,7 +602,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat Nov 24 2018 01:01:39 GMT-0600 (Central Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 31 2019 22:27:53 GMT-0600 (Central Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
