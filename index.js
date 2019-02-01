@@ -47,7 +47,7 @@ class Mp4Frag extends Transform {
                 this._hlsList = [];
                 this._hlsBase = options.hlsBase;
                 this._sequence = -1;
-                this._sequenceRegex = new RegExp(`^${this._hlsBase}(?<sequence>\\d+).m4s\$`,'i');
+                this._sequenceRegex = new RegExp(`^${this._hlsBase}(\\d+).m4s\$`,'i');
             }
             if (options.hasOwnProperty('bufferListSize')) {
                 const bufferListSize = parseInt(options.bufferListSize);
@@ -224,7 +224,7 @@ class Mp4Frag extends Transform {
      */
     getHlsNamedSegment(namedSequence) {
         const regexResult = namedSequence.match(this._sequenceRegex);
-        return regexResult ? this.getHlsSegment(regexResult.groups.sequence) : null;
+        return regexResult ? this.getHlsSegment(regexResult[1]) : null;
     }
 
     /**
