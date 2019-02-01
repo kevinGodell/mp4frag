@@ -32,7 +32,7 @@ class Mp4Frag extends Transform {
     constructor(options, callback) {
         super(options);
         if (options) {
-            if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
+            if (typeof options.hlsBase === 'string' && /^[a-zA-Z0-9]+$/i.exec(options.hlsBase)) {
                 const hlsListSize = parseInt(options.hlsListSize);
                 this._hlsListInit = options.hlsListInit === true;
                 if (isNaN(hlsListSize)) {
