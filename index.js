@@ -214,10 +214,10 @@ class Mp4Frag extends Transform {
      * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence name.
      * @returns {Buffer}
      */
-    getHlsNamedSegment(namedSequence) {
-        if (namedSequence && this._hlsList && this._hlsList.length > 0) {
+    getHlsNamedSegment(name) {
+        if (name && this._hlsList && this._hlsList.length > 0) {
             for (let i = 0; i < this._hlsList.length; i++) {
-                if (this._hlsList[i].sequence === namedSequence) {
+                if (this._hlsList[i].name === name) {
                     return this._hlsList[i].segment;
                 }
             }
@@ -414,7 +414,7 @@ class Mp4Frag extends Transform {
         this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
-            this._hlsList.push({sequence: `${this._hlsBase}${++this._sequence}.m4s`/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
+            this._hlsList.push({sequence: ++this._sequence, name: `${this._hlsBase}${this._sequence}.m4s`, segment: this._segment, duration: this._duration});
             while (this._hlsList.length > this._hlsListSize) {
                 this._hlsList.shift();
             }
@@ -426,7 +426,7 @@ class Mp4Frag extends Transform {
             m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
             for (let i = 0; i < this._hlsList.length; i++) {
                 m3u8 += `#EXTINF:${this._hlsList[i].duration.toFixed(6)},\n`;
-                m3u8 += `${this._hlsBase}${this._hlsList[i].sequence}.m4s\n`;
+                m3u8 += `${this._hlsList[i].name}\n`;
             }
             this._m3u8 = m3u8;
         }
