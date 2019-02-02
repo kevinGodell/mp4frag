@@ -75,7 +75,6 @@ class Mp4Frag extends Transform {
                 this._hlsList = [];
                 this._hlsBase = options.hlsBase;
                 this._sequence = -1;
-                this._sequenceRegex = new RegExp(`^${this._hlsBase}(?&lt;sequence>\\d+).m4s\$`,'i');
             }
             if (options.hasOwnProperty('bufferListSize')) {
                 const bufferListSize = parseInt(options.bufferListSize);
@@ -226,33 +225,32 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * @param {Integer} sequence
-     * - Returns the Mp4 segment that corresponds to the HLS sequence number as a Buffer.
+     * @param {Number|String} sequence
+     * - Returns the Mp4 segment that corresponds to the HLS numbered sequence as a Buffer.
      * &lt;br/>
-     * - Returns &lt;b>Null&lt;/b> if there is no Mp4 segment that corresponds to sequence number.
+     * - Returns &lt;b>Null&lt;/b> if there is no .m4s segment that corresponds to sequence number.
      * @returns {Buffer}
      */
     getHlsSegment(sequence) {
-        if (sequence &amp;&amp; this._hlsList &amp;&amp; this._hlsList.length > 0) {
-            for (let i = 0; i &lt; this._hlsList.length; i++) {
-                if (this._hlsList[i].sequence === Number.parseInt(sequence)) {
-                    return this._hlsList[i].segment;
-                }
-            }
-        }
-        return null;
+        return this.getHlsNamedSegment(`${this._hlsBase}${sequence}.m4s`);
     }
 
     /**
      * @param {String} namedSequence
      * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
      * &lt;br/>
-     * - Returns &lt;b>Null&lt;/b> if there is no Mp4 segment that corresponds to sequence name.
+     * - Returns &lt;b>Null&lt;/b> if there is no .m4s segment that corresponds to sequence name.
      * @returns {Buffer}
      */
     getHlsNamedSegment(namedSequence) {
-        const regexResult = namedSequence.match(this._sequenceRegex);
-        return regexResult ? this.getHlsSegment(regexResult.groups.sequence) : null;
+        if (namedSequence &amp;&amp; this._hlsList &amp;&amp; this._hlsList.length > 0) {
+            for (let i = 0; i &lt; this._hlsList.length; i++) {
+                if (this._hlsList[i].sequence === namedSequence) {
+                    return this._hlsList[i].segment;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -262,7 +260,7 @@ class Mp4Frag extends Transform {
     _findFtyp(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength &lt; 8 || chunk.indexOf(_FTYP) !== 4) {
-            this.emit('error', new Error('FTYP not found.'));
+            this.emit('error', new Error(`${_FTYP.toString()} not found.`));
             return;
         }
         this._ftypLength = chunk.readUInt32BE(0, true);
@@ -276,7 +274,7 @@ class Mp4Frag extends Transform {
         } else {
             //should not be possible to get here because ftyp is approximately 24 bytes
             //will have to buffer this chunk and wait for rest of it on next pass
-            this.emit('error', new Error('ftypLength > chunkLength'));
+            this.emit('error', new Error(`ftypLength:${this._ftypLength} > chunkLength:${chunkLength}`));
             return;
         }
     }
@@ -288,7 +286,7 @@ class Mp4Frag extends Transform {
     _findMoov(chunk) {
         const chunkLength = chunk.length;
         if (chunkLength &lt; 8 || chunk.indexOf(_MOOV) !== 4) {
-            this.emit('error', new Error('MOOV not found.'));
+            this.emit('error', new Error(`${_MOOV.toString()} not found.`));
             return;
         }
         const moovLength = chunk.readUInt32BE(0, true);
@@ -307,7 +305,7 @@ class Mp4Frag extends Transform {
             //probably should not arrive here here because moov is typically &lt; 800 bytes
             //will have to store chunk until size is big enough to have entire moov piece
             //ffmpeg may have crashed before it could output moov and got us here
-            this.emit('error', new Error('moovLength > chunkLength'));
+            this.emit('error', new Error(`moovLength:${moovLength} > chunkLength:${chunkLength}`));
             return;
         }
     }
@@ -325,7 +323,7 @@ class Mp4Frag extends Transform {
         }
         let index = this._initialization.indexOf(_AVCC);
         if (index === -1) {
-            this.emit('error', new Error('Codec info not found.'));
+            this.emit('error', new Error(`${_AVCC.toString()} codec info not found.`));
             return;
         }
         index += 5;
@@ -368,7 +366,7 @@ class Mp4Frag extends Transform {
                 this._parseChunk(chunk.slice(index - 4));
             }
         } else {
-            this.emit('error', new Error(`MOOF hunt failed after ${this._moofHunts} attempts.`));
+            this.emit('error', new Error(`${_MOOF.toString()} hunt failed after ${this._moofHunts} attempts.`));
             return;
         }
     }
@@ -414,7 +412,7 @@ class Mp4Frag extends Transform {
             }
             this._moofLength = chunk.readUInt32BE(0, true);
             if (this._moofLength === 0) {
-                this.emit('error', new Error('Bad data from input stream reports moof length of 0.'));
+                this.emit('error', new Error(`Bad data from input stream reports ${_MOOF.toString()} length of 0.`));
                 return;
             }
             if (this._moofLength &lt; chunkLength) {
@@ -444,7 +442,7 @@ class Mp4Frag extends Transform {
         this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
-            this._hlsList.push({sequence: ++this._sequence/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
+            this._hlsList.push({sequence: `${this._hlsBase}${++this._sequence}.m4s`/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
             while (this._hlsList.length > this._hlsListSize) {
                 this._hlsList.shift();
             }
@@ -514,7 +512,7 @@ class Mp4Frag extends Transform {
         } else {
             const chunkLength = chunk.length;
             if (chunkLength &lt; 8 || chunk.indexOf(_MDAT) !== 4) {
-                this.emit('error', new Error('MDAT not found.'));
+                this.emit('error', new Error(`${_MDAT.toString()} not found.`));
                 return;
             }
             this._mdatLength = chunk.readUInt32BE(0, true);
@@ -602,7 +600,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 31 2019 22:43:18 GMT-0600 (Central Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Feb 01 2019 23:07:54 GMT-0600 (Central Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
