@@ -1,8 +1,0 @@
-node_modules/
-docs/
-tests/
-.idea/
-.travis.yml
-appveyor.yml
-.jshintrc
-mp4frag.iml

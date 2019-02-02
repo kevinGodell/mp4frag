@@ -7,6 +7,7 @@
     "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8",
     "preversion": "npm test",
     "postversion": "npm run doc",
+    "pack": "npm pack",
     "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs"
   },
   "repository": {
@@ -40,8 +41,6 @@
     "jsdoc": "^3.5.5"
   },
   "files": [
-    "index.js",
-    "LICENSE",
-    "README.md"
+    "index.js"
   ]
 }
