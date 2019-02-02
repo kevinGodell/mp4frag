@@ -105,11 +105,11 @@ class Mp4Frag extends Transform {
 
     /**
      * @readonly
-     * @property {Integer} timestamp
+     * @property {Number} timestamp
      * - Returns the timestamp of the latest Mp4 segment as an Integer(milliseconds).
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-     * @returns {Integer}
+     * @returns {Number}
      */
     get timestamp() {
         return this._timestamp || -1;
@@ -117,11 +117,11 @@ class Mp4Frag extends Transform {
 
     /**
      * @readonly
-     * @property {Float} duration
+     * @property {Number} duration
      * - Returns the duration of latest Mp4 segment as a Float(seconds).
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-     * @returns {Float}
+     * @returns {Number}
      */
     get duration() {
         return this._duration || -1;
@@ -141,14 +141,14 @@ class Mp4Frag extends Transform {
 
     /**
      * @readonly
-     * @property {Integer} sequence
+     * @property {Number} sequence
      * - Returns the latest sequence of the fmp4 HLS m3u8 playlist as an Integer.
      * <br/>
      * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-     * @returns {Integer}
+     * @returns {Number}
      */
     get sequence() {
-        return this._sequence || -1;
+        return Number.isInteger(this._sequence) ? this._sequence : -1;
     }
 
     /**
@@ -208,7 +208,7 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * @param {String} namedSequence
+     * @param {String} name
      * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
      * <br/>
      * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence name.
