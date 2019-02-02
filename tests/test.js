@@ -60,7 +60,7 @@ mp4frag.once('initialized', (data)=> {
 
 mp4frag.on('segment', (data)=> {
     counter++;
-    console.log(mp4frag.getHlsSegment(mp4frag.sequence) === mp4frag.getHlsNamedSegment(`${hlsBase}${mp4frag.sequence}.m4s`))
+    console.log(mp4frag.sequence, data.length, mp4frag.segment.length, mp4frag.getHlsSegment(mp4frag.sequence).length, mp4frag.getHlsNamedSegment(`${hlsBase}${mp4frag.sequence}.m4s`).length);
 });
 
 mp4frag.once('error', (err)=> {
