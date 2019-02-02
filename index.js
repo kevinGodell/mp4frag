@@ -47,7 +47,6 @@ class Mp4Frag extends Transform {
                 this._hlsList = [];
                 this._hlsBase = options.hlsBase;
                 this._sequence = -1;
-                this._sequenceRegex = new RegExp(`^${this._hlsBase}(\\d+).m4s\$`,'i');
             }
             if (options.hasOwnProperty('bufferListSize')) {
                 const bufferListSize = parseInt(options.bufferListSize);
@@ -198,33 +197,32 @@ class Mp4Frag extends Transform {
     }
 
     /**
-     * @param {Integer} sequence
-     * - Returns the Mp4 segment that corresponds to the HLS sequence number as a Buffer.
+     * @param {Number|String} sequence
+     * - Returns the Mp4 segment that corresponds to the HLS numbered sequence as a Buffer.
      * <br/>
-     * - Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence number.
+     * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence number.
      * @returns {Buffer}
      */
     getHlsSegment(sequence) {
-        if (sequence && this._hlsList && this._hlsList.length > 0) {
-            for (let i = 0; i < this._hlsList.length; i++) {
-                if (this._hlsList[i].sequence === Number.parseInt(sequence)) {
-                    return this._hlsList[i].segment;
-                }
-            }
-        }
-        return null;
+        return this.getHlsNamedSegment(`${this._hlsBase}${sequence}.m4s`);
     }
 
     /**
      * @param {String} namedSequence
      * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
      * <br/>
-     * - Returns <b>Null</b> if there is no Mp4 segment that corresponds to sequence name.
+     * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence name.
      * @returns {Buffer}
      */
     getHlsNamedSegment(namedSequence) {
-        const regexResult = namedSequence.match(this._sequenceRegex);
-        return regexResult ? this.getHlsSegment(regexResult[1]) : null;
+        if (namedSequence && this._hlsList && this._hlsList.length > 0) {
+            for (let i = 0; i < this._hlsList.length; i++) {
+                if (this._hlsList[i].sequence === namedSequence) {
+                    return this._hlsList[i].segment;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -416,7 +414,7 @@ class Mp4Frag extends Transform {
         this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
         this._timestamp = currentTime;
         if (this._hlsList) {
-            this._hlsList.push({sequence: ++this._sequence/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
+            this._hlsList.push({sequence: `${this._hlsBase}${++this._sequence}.m4s`/*String(++this._sequence)*/, segment: this._segment, duration: this._duration});
             while (this._hlsList.length > this._hlsListSize) {
                 this._hlsList.shift();
             }

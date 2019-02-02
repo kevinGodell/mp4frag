@@ -50,7 +50,9 @@ const params = [
     'pipe:1'
 ];
 
-const mp4frag = new Mp4Frag();
+const hlsBase = 'someHlsBase';
+
+const mp4frag = new Mp4Frag({hlsBase: hlsBase, hlsListSize: 5});
 
 mp4frag.once('initialized', (data)=> {
     assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
@@ -58,6 +60,7 @@ mp4frag.once('initialized', (data)=> {
 
 mp4frag.on('segment', (data)=> {
     counter++;
+    console.log(mp4frag.getHlsSegment(mp4frag.sequence) === mp4frag.getHlsNamedSegment(`${hlsBase}${mp4frag.sequence}.m4s`))
 });
 
 mp4frag.once('error', (err)=> {
