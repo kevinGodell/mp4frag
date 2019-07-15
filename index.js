@@ -563,5 +563,4 @@ class Mp4Frag extends Transform {
   }
 }
 
-
 module.exports = Mp4Frag;
