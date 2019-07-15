@@ -247,7 +247,7 @@ class Mp4Frag extends Transform {
       //should not be possible to get here because ftyp is approximately 24 bytes
       //will have to buffer this chunk and wait for rest of it on next pass
       this.emit('error', new Error(`ftypLength:${this._ftypLength} > chunkLength:${chunkLength}`));
-      return;
+      //return;
     }
   }
 
@@ -278,7 +278,7 @@ class Mp4Frag extends Transform {
       //will have to store chunk until size is big enough to have entire moov piece
       //ffmpeg may have crashed before it could output moov and got us here
       this.emit('error', new Error(`moovLength:${moovLength} > chunkLength:${chunkLength}`));
-      return;
+      //return;
     }
   }
 
@@ -562,5 +562,6 @@ class Mp4Frag extends Transform {
     }
   }
 }
+
 
 module.exports = Mp4Frag;
