@@ -8,7 +8,8 @@
     "preversion": "npm test",
     "postversion": "npm run doc",
     "pack": "npm pack",
-    "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs"
+    "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
+    "lint": "eslint --fix --ext .js --ignore-path .gitignore ."
   },
   "repository": {
     "type": "git",
@@ -37,8 +38,12 @@
   },
   "homepage": "https://github.com/kevinGodell/mp4frag#readme",
   "devDependencies": {
-    "ffmpeg-static": "^2.4.0",
-    "jsdoc": "^3.5.5"
+    "@ffmpeg-installer/ffmpeg": "^1.0.19",
+    "eslint": "^6.0.1",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "jsdoc": "^3.6.3",
+    "prettier": "^1.18.2"
   },
   "files": [
     "index.js"
