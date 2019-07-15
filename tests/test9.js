@@ -16,27 +16,27 @@ const mp4frag = new Mp4Frag();
 
 let counter = 0;
 
-mp4frag.once('initialized', (data)=> {
-    console.log(data);
+mp4frag.once('initialized', data => {
+  console.log(data);
 });
 
-mp4frag.on('segment', (data)=> {
-    counter++;
-    console.log(data);
+mp4frag.on('segment', data => {
+  counter++;
+  console.log(data);
 });
 
-mp4frag.once('error', (data) => {
-    console.log('mp4frag error', data);
+mp4frag.once('error', data => {
+  console.log('mp4frag error', data);
 });
 
 const readStream = fs.createReadStream(inputFile);
 
-readStream.once('error', (err) => {
-    console.error('unable to read file', err);
+readStream.once('error', err => {
+  console.error('unable to read file', err);
 });
 
 readStream.once('end', () => {
-    assert(counter === 47, 'Expected 47 segments.');
+  assert(counter === 47, 'Expected 47 segments.');
 });
 
 readStream.pipe(mp4frag);

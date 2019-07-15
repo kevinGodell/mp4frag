@@ -2,71 +2,78 @@
 
 console.time('=====> test10.js');
 
-const { Writable} = require('stream');
+const { Writable } = require('stream');
 
 const assert = require('assert');
 
 const Mp4Frag = require('../index');
 
-const ffmpegPath = require('ffmpeg-static').path;
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 
 const { spawn } = require('child_process');
 
-const count = 1;//expected count of segments
+const count = 1; //expected count of segments
 
 const frames = 1;
 
-const fps = 24;//number of frames per second(same as input video) might not be necessary
+const fps = 24; //number of frames per second(same as input video) might not be necessary
 
-const scale =  640;//used as width of video, height will automatically scale
+const scale = 640; //used as width of video, height will automatically scale
 
 let counter = 0;
 
 const params = [
-    /* log info to console */
-    '-loglevel', 'quiet',
-    //'-stats',
+  /* log info to console */
+  '-loglevel',
+  'quiet',
+  //'-stats',
 
-    /* use hardware acceleration if available */
-    '-hwaccel', 'auto',
+  /* use hardware acceleration if available */
+  '-hwaccel',
+  'auto',
 
-    /* use an artificial video input */
-    //'-re',
-    //'-f', 'lavfi',
-    //'-i', 'testsrc=size=1280x720:rate=20',
+  /* use an artificial video input */
+  //'-re',
+  //'-f', 'lavfi',
+  //'-i', 'testsrc=size=1280x720:rate=20',
 
-    '-rtsp_transport', 'tcp',
-    '-i', 'rtsp://192.168.1.22:554/user=admin_password=pass_channel=1_stream=1.sdp',
+  '-rtsp_transport',
+  'tcp',
+  '-i',
+  'rtsp://192.168.1.22:554/user=admin_password=pass_channel=1_stream=1.sdp',
 
-    //'-individual_header_trailer', 1,
-    //'-write_header_trailer', 0,
-    //'-break_non_keyframes', 1,
-    //'-map', 0,
-    '-an',
-    '-c:v', 'copy',
-    '-f', 'mp4',
-    '-movflags', '+dash',
-    //'-f', 'segment',
-    //'-reset_timestamps', 1,
-    //'-segment_time', 10,
-    //'-segment_atclocktime', 1,
-    //'-segment_format', 'mp4',
-    //'-segment_format_options', 'movflags=+faststart',
-    //'-segment_format_options', 'movflags=+frag_keyframe+empty_moov+default_base_moof:frag_duration=1000000:min_frag_duration=1000000',
-    //'-segment_format_options', 'movflags=+dash+negative_cts_offsets',
-    //'-segment_format_options', 'movflags=+dash',
-    //'-strftime', 1,
-    //'%Y-%m-%dT%H-%M-%S.mp4'
-    //'capture=%03d.mp4'
-    'pipe:1'
+  //'-individual_header_trailer', 1,
+  //'-write_header_trailer', 0,
+  //'-break_non_keyframes', 1,
+  //'-map', 0,
+  '-an',
+  '-c:v',
+  'copy',
+  '-f',
+  'mp4',
+  '-movflags',
+  '+dash',
+  //'-f', 'segment',
+  //'-reset_timestamps', 1,
+  //'-segment_time', 10,
+  //'-segment_atclocktime', 1,
+  //'-segment_format', 'mp4',
+  //'-segment_format_options', 'movflags=+faststart',
+  //'-segment_format_options', 'movflags=+frag_keyframe+empty_moov+default_base_moof:frag_duration=1000000:min_frag_duration=1000000',
+  //'-segment_format_options', 'movflags=+dash+negative_cts_offsets',
+  //'-segment_format_options', 'movflags=+dash',
+  //'-strftime', 1,
+  //'%Y-%m-%dT%H-%M-%S.mp4'
+  //'capture=%03d.mp4'
+  'pipe:1'
 
-    //-f segment -segment_time 300 -segment_format mp4 "capture-%03d.mp4"
+  //-f segment -segment_time 300 -segment_format mp4 "capture-%03d.mp4"
 
-    /*'-rtsp_transport', 'tcp',
+  /*'-rtsp_transport', 'tcp',
     '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp',*/
 
-    /* set output flags */
-    /*'-an',
+  /* set output flags */
+  /*'-an',
     '-c:v', 'libx264',
     '-movflags', '+frag_keyframe+empty_moov+default_base_moof',
     '-f', 'mp4',
@@ -81,44 +88,48 @@ const params = [
     'pipe:1'*/
 ];
 
-const mp4frag = new Mp4Frag({hlsBase: 'test', hlsListInit: true});
+const mp4frag = new Mp4Frag({ hlsBase: 'test', hlsListInit: true });
 
-mp4frag.once('initialized', (data)=> {
-    console.log('init');
-    assert(mp4frag.m3u8 === `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test.mp4"\n`, 'Unexpected m3u8 data');
+mp4frag.once('initialized', data => {
+  console.log('init');
+  assert(
+    mp4frag.m3u8 ===
+      `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test.mp4"\n`,
+    'Unexpected m3u8 data'
+  );
 });
 
-mp4frag.on('segment', (data)=> {
-    console.log('seg');
-    counter++;
+mp4frag.on('segment', data => {
+  console.log('seg');
+  counter++;
 });
 
-mp4frag.once('error', (data)=> {
-    //error is expected when ffmpeg exits without unpiping
-    console.log('mp4frag error', data);
+mp4frag.once('error', data => {
+  //error is expected when ffmpeg exits without unpiping
+  console.log('mp4frag error', data);
 });
 
-const ffmpeg = spawn(ffmpegPath, params, {stdio: ['ignore', 'pipe', 'inherit']});
+const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', (error) => {
-    console.log('ffmpeg error', error);
+ffmpeg.once('error', error => {
+  console.log('ffmpeg error', error);
 });
 
 ffmpeg.once('exit', (code, signal) => {
-    assert(counter === count, `${counter} !== ${count}`);
-    assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-    console.timeEnd('=====> test8.js');
+  assert(counter === count, `${counter} !== ${count}`);
+  assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
+  console.timeEnd('=====> test8.js');
 });
 
 ffmpeg.stdio[1].pipe(mp4frag);
 
 const wri = new Writable({
-    write(chunk, encoding, callback) {
-        //destination(chunk);
-        console.log('length', chunk.length, new Date().toISOString())
-        //console.log(chunk.length);
-        callback();
-    }
+  write(chunk, encoding, callback) {
+    //destination(chunk);
+    console.log('length', chunk.length, new Date().toISOString());
+    //console.log(chunk.length);
+    callback();
+  }
 });
 
 //ffmpeg.stdio[1].pipe(wri);
