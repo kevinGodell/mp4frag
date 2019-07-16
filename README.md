@@ -89,7 +89,6 @@ app.get('/pool:id.m4s', (req, res) => {
     }
 });
 ```
-See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/compare.js
 ## Example 2: *Create a buffer of past video to store for later recording*
 
 ```javascript
@@ -138,4 +137,3 @@ const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
     */
     
 ```
-See it in use @ https://github.com/kevinGodell/mse-live-player/blob/master/record2.js
