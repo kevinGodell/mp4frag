@@ -7,9 +7,9 @@
     "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8",
     "preversion": "npm test",
     "postversion": "npm run doc",
-    "pack": "npm pack",
+    "pack": "npm --verbose pack",
     "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
-    "lint": "eslint --fix --ext .js --ignore-path .gitignore ."
+    "lint": "eslint --fix ."
   },
   "repository": {
     "type": "git",
