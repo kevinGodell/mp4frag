@@ -26,10 +26,9 @@ class Mp4Frag extends Transform {
    * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
    * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false.
    * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
-   * @param {Function} [callback] - Function to be called when segments are parsed from piped data. Must be able to pass 1 parameter that will contain segment buffer.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    */
-  constructor(options, callback) {
+  constructor(options) {
     super(options);
     if (options) {
       if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
@@ -59,9 +58,6 @@ class Mp4Frag extends Transform {
         }
         this._bufferList = [];
       }
-    }
-    if (typeof callback === 'function') {
-      this._callback = callback;
     }
     this._parseChunk = this._findFtyp;
     return this;
@@ -447,18 +443,13 @@ class Mp4Frag extends Transform {
     if (this._readableState.pipesCount > 0) {
       this.push(this._segment);
     }
-    if (this._callback) {
-      this._callback(this._segment);
-    }
-    if (this.listenerCount('segment') > 0) {
-      /**
-       * Fires when the latest Mp4 segment is parsed from the piped data.
-       * @event Mp4Frag#segment
-       * @type {Event}
-       * @property {Buffer} segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
-       */
-      this.emit('segment', this._segment);
-    }
+    /**
+     * Fires when the latest Mp4 segment is parsed from the piped data.
+     * @event Mp4Frag#segment
+     * @type {Event}
+     * @property {Buffer} segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
+     */
+    this.emit('segment', this._segment);
   }
 
   /**
