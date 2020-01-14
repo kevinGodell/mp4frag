@@ -73,7 +73,7 @@ app.get('/pool.m3u8', (req, res) => {
 app.get('/init-pool.mp4', (req, res) => {
     if (mp4frag.initialization) {
         res.writeHead(200, {'Content-Type': 'video/mp4'});
-        res.end(mp4.initialization);
+        res.end(mp4frag.initialization);
     } else {
         res.sendStatus(503);
     }
