@@ -9,6 +9,9 @@ const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
+const _DEF = 4; // hls and buffer list size default
+const _MIN = 2; // hls and buffer list size minimum
+const _MAX = 10; // hls and buffer list size maximum
 
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
@@ -22,45 +25,74 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
-   * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist.
+   * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
    * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
    * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false.
    * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
+   * @throws Will throw an error if options.hlsBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
     super(options);
     if (options) {
-      if (typeof options.hlsBase === 'string' && /^[a-z0-9]+$/i.exec(options.hlsBase)) {
-        const hlsListSize = parseInt(options.hlsListSize);
-        this._hlsListInit = options.hlsListInit === true;
-        if (isNaN(hlsListSize)) {
-          this._hlsListSize = 4;
-        } else if (hlsListSize < 2) {
-          this._hlsListSize = 2;
-        } else if (hlsListSize > 10) {
-          this._hlsListSize = 10;
-        } else {
-          this._hlsListSize = hlsListSize;
+      if (options.hasOwnProperty('hlsBase')) {
+        if (/^[a-z_]+$/i.exec(options.hlsBase) === null) {
+          throw new Error('hlsBase must only contain letters and underscores');
         }
-        this._hlsList = [];
+
         this._hlsBase = options.hlsBase;
+
+        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit);
+
+        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _DEF, _MIN, _MAX);
+
+        this._hlsList = [];
+
         this._sequence = -1;
       }
+
       if (options.hasOwnProperty('bufferListSize')) {
-        const bufferListSize = parseInt(options.bufferListSize);
-        if (isNaN(bufferListSize) || bufferListSize < 2) {
-          this._bufferListSize = 2;
-        } else if (bufferListSize > 10) {
-          this._bufferListSize = 10;
-        } else {
-          this._bufferListSize = bufferListSize;
-        }
+        this._bufferListSize = Mp4Frag._validateNumber(options.bufferListSize, _DEF, _MIN, _MAX);
+
         this._bufferList = [];
       }
     }
+
     this._parseChunk = this._findFtyp;
+
     return this;
+  }
+
+  /**
+   *
+   * @param number {Number}
+   * @param def {Number}
+   * @param min {Number}
+   * @param max {Number}
+   * @return {Number}
+   * @private
+   */
+  static _validateNumber(number, def, min, max) {
+    if (isNaN(number)) {
+      return def;
+    }
+    if (number < min) {
+      return min;
+    }
+    if (number > max) {
+      return max;
+    }
+    return number;
+  }
+
+  /**
+   *
+   * @param bool
+   * @return {boolean}
+   * @private
+   */
+  static _validateBoolean(bool) {
+    return bool === true || bool === 'true' || bool === 1 || bool === '1';
   }
 
   /**
