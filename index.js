@@ -36,7 +36,7 @@ class Mp4Frag extends Transform {
     super(options);
     if (options) {
       if (options.hasOwnProperty('hlsBase')) {
-        if (/^[a-z_]+$/i.exec(options.hlsBase) === null) {
+        if (/[^a-z_]/gi.test(options.hlsBase)) {
           throw new Error('hlsBase must only contain letters and underscores');
         }
 
@@ -334,7 +334,8 @@ class Mp4Frag extends Transform {
     this._timestamp = Date.now();
     if (this._hlsList && this._hlsListInit) {
       let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:7\n';
+      m3u8 += '#EXT-X-PLAYLIST-TYPE:EVENT\n';
+      m3u8 += '#EXT-X-VERSION:3\n';
       //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
@@ -455,7 +456,8 @@ class Mp4Frag extends Transform {
         this._hlsList.shift();
       }
       let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:7\n';
+      m3u8 += '#EXT-X-PLAYLIST-TYPE:EVENT\n';
+      m3u8 += '#EXT-X-VERSION:3\n';
       //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
       m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
