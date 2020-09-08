@@ -334,7 +334,7 @@ class Mp4Frag extends Transform {
     this._timestamp = Date.now();
     if (this._hlsList && this._hlsListInit) {
       let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:3\n';
+      m3u8 += '#EXT-X-VERSION:5\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
       m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
@@ -454,7 +454,7 @@ class Mp4Frag extends Transform {
         this._hlsList.shift();
       }
       let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:3\n';
+      m3u8 += '#EXT-X-VERSION:5\n';
       m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
       m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
