@@ -11,13 +11,14 @@ Currently being used in [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-
 
 # Options for a new instance of Mp4Frag
 
-#### bufferListSize: unsigned int (2 - 10), *setting this value will store specified number of media segments in the buffer*
+#### segmentCount: unsigned int (2 - 15), *setting this value will store specified number of media segments in the buffer*
+* will be ignored if setting hlsBase
 ```javascript
-const mp4frag = new Mp4Frag({bufferListSize: 3});
+const mp4frag = new Mp4Frag({segmentCount: 3});
 ```
 
-#### hlsListSize: unsigned int (2 - 10), *setting this along with hlsBase will generate a live fmp4 HLS m3u8 playlist*
-#### hlsBase: 'string', *setting this along with hlsListSize will generate a live fmp4 HLS m3u8 playlist*
+#### hlsBase: 'string', *setting this will generate a live fmp4 HLS m3u8 playlist*
+#### hlsListSize: unsigned int (2 - 15), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
 ```javascript
 const mp4frag = new Mp4Frag({hlsListSize: 4, hlsBase: 'myString'});
 ```
@@ -31,7 +32,7 @@ const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
 
-const mp4frag = new Mp4Frag({hlsListSize: 3, hlsBase: 'pool'});
+const mp4frag = new Mp4Frag({hlsListSize: 3, hlsBase: 'back_yard'});
 
 const ffmpeg = spawn(
     'ffmpeg',
@@ -43,7 +44,7 @@ ffmpeg.stdio[1].pipe(mp4frag);
    
 ```
   * **m3u8 playlist will now be available via `mp4frag.m3u8` and can be served to a client browser via express**
-  * **segments in playlist can be accessed by sequence number via `mp4frag.getHlsSegment(6)`, with `6` being the current sequence number**
+  * **segments in playlist can be accessed by sequence number via `mp4frag.getSegment(6)`, with `6` being the current sequence number**
 #### Generated m3u8 playlist will look like the following example pulled from my live feed
 ```
 #EXTM3U
@@ -51,17 +52,17 @@ ffmpeg.stdio[1].pipe(mp4frag);
 #EXT-X-ALLOW-CACHE:NO
 #EXT-X-TARGETDURATION:4
 #EXT-X-MEDIA-SEQUENCE:6
-#EXT-X-MAP:URI="init-pool.mp4"
-#EXTINF:4.78,
-pool6.m4s
-#EXTINF:5.439,
-pool7.m4s
-#EXTINF:4.269,
-pool8.m4s
+#EXT-X-MAP:URI="init-back_yard.mp4"
+#EXTINF:4.780000,
+back_yard6.m4s
+#EXTINF:5.439000,
+back_yard7.m4s
+#EXTINF:4.269000,
+back_yard8.m4s
 ```
 #### Setting up some server routes to respond to http requests for playing live HLS feed
 ```javascript
-app.get('/pool.m3u8', (req, res) => {
+app.get('/back_yard.m3u8', (req, res) => {
     if (mp4frag.m3u8) {
         res.writeHead(200, {'Content-Type': 'application/vnd.apple.mpegurl'});
         res.end(mp4frag.m3u8);
@@ -70,7 +71,7 @@ app.get('/pool.m3u8', (req, res) => {
     }
 });
 
-app.get('/init-pool.mp4', (req, res) => {
+app.get('/init-back_yard.mp4', (req, res) => {
     if (mp4frag.initialization) {
         res.writeHead(200, {'Content-Type': 'video/mp4'});
         res.end(mp4frag.initialization);
@@ -79,8 +80,8 @@ app.get('/init-pool.mp4', (req, res) => {
     }
 });
 
-app.get('/pool:id.m4s', (req, res) => {
-    const segment = mp4frag.getHlsSegment(req.params.id);
+app.get('/back_yard:id.m4s', (req, res) => {
+    const segment = mp4frag.getSegment(req.params.id);
     if (segment) {
         res.writeHead(200, {'Content-Type': 'video/mp4'});
         res.end(segment);
@@ -98,7 +99,7 @@ const Mp4Frag = require('mp4frag');
 
 //3 past segments will be held in buffer for later access via mp4frag.buffer
 //if each segment has a duration of 2 seconds, then buffer will contain 6 seconds of video
-const mp4frag = new Mp4Frag({bufferListSize: 3});
+const mp4frag = new Mp4Frag({segmentCount: 3});
 
 const ffmpeg = spawn(
     'ffmpeg',
@@ -108,32 +109,16 @@ const ffmpeg = spawn(
 
 ffmpeg.stdio[1].pipe(mp4frag);
 ```
-##### Moments later, some triggering event occurs such as motion detection and we need to record video including 6 seconds of buffered video from before motion was detected
+##### Moments later, some triggering event occurs such as motion detection, and we need to record buffered video from before the event occurred:
 
 ```javascript
 const fs = require('fs');
 
 const writeStream = fs.createWriteStream(`${Date.now()}.mp4`);
 
-    //write in the initialization fragment of mp4 file
-    writeStream.write(mp4frag.initialization);
-
-    //write the buffered segments
+    //write the currently buffered Mp4 initialization fragment and media segments
     writeStream.write(mp4frag.buffer);
-    
-    /*
-    //piping method as an alternative to passing data in "segment" event 
-    
-    //pipe fresh segments to writeStream
-    mp4frag.pipe(writeStream);
-    
-    //when you need to stop recording
-    
-    //unpipe
-    mp4frag.unpipe(writeStream);
     
     //end
     writeStream.end();
-    */
-    
 ```
