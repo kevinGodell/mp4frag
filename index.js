@@ -71,7 +71,6 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   *
    * @param number {*|Number|String}
    * @param def {Number}
    * @param min {Number}
@@ -94,7 +93,6 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   *
    * @param bool {*|Boolean}
    * @param def {Boolean}
    * @return {boolean}
@@ -474,13 +472,14 @@ class Mp4Frag extends Transform {
         this._bufferList.shift();
       }
       if (this._hlsBase) {
+        let i = this._bufferList.length > this._hlsListSize ? this._bufferList.length - this._hlsListSize : 0;
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
         m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
-        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._bufferList[0].sequence}\n`;
+        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._bufferList[i].sequence}\n`;
         m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
         for (
-          let i = this._bufferList.length > this._hlsListSize ? this._bufferList.length - this._hlsListSize : 0;
+          i;
           i < this._bufferList.length;
           i++
         ) {
