@@ -73,7 +73,7 @@ mp4frag.once('initialized', data => {
 
 mp4frag.on('segment', data => {
   const writeStream = fs.createWriteStream(`${__dirname}/out/seg-${counter}.m4s`);
-  writeStream.end(data);
+  writeStream.end(data.buffer);
   counter++;
 });
 
