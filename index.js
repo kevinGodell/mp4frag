@@ -9,9 +9,13 @@ const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
-const _DEF = 4; // hls and buffer list size default
-const _MIN = 2; // hls and buffer list size minimum
-const _MAX = 10; // hls and buffer list size maximum
+const _HLS_DEF = 4; // hls list size default
+const _HLS_MIN = 2; // hls list size minimum
+const _HLS_MAX = 10; // hls list size maximum
+const _HLS_EXTRA_MAX = 5; // hls extra segments in memory
+const _BUF_DEF = 2; // buffer list size default
+const _BUF_MIN = 2; // buffer list size minimum
+const _BUF_MAX = 15; // buffer list size maximum
 
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
@@ -25,10 +29,11 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
-   * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
-   * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
-   * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false.
-   * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
+   * @param {String} [options.hlsBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
+   * @param {Number} [options.hlsListSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 10.
+   * @param {Number} [options.hlsListExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 5.
+   * @param {Boolean} [options.hlsListInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
+   * @param {Number} [options.bufferListSize = 2] - Number of segments to keep in memory. Has no effect if using options.hlsBase. Must be an integer ranging from 2 to 15.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    * @throws Will throw an error if options.hlsBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
@@ -42,17 +47,19 @@ class Mp4Frag extends Transform {
 
         this._hlsBase = options.hlsBase;
 
-        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit);
+        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit, true);
 
-        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _DEF, _MIN, _MAX);
+        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
 
-        this._hlsList = [];
+        this._hlsListExtra = Mp4Frag._validateNumber(options.hlsListExtra, 0, 0, _HLS_EXTRA_MAX);
+
+        this._bufferListSize = this._hlsListSize + this._hlsListExtra;
+
+        this._bufferList = [];
 
         this._sequence = -1;
-      }
-
-      if (options.hasOwnProperty('bufferListSize')) {
-        this._bufferListSize = Mp4Frag._validateNumber(options.bufferListSize, _DEF, _MIN, _MAX);
+      } else if (options.hasOwnProperty('bufferListSize')) {
+        this._bufferListSize = Mp4Frag._validateNumber(options.bufferListSize, _BUF_DEF, _BUF_MIN, _BUF_MAX);
 
         this._bufferList = [];
       }
@@ -87,12 +94,13 @@ class Mp4Frag extends Transform {
 
   /**
    *
-   * @param bool
+   * @param bool {*}
+   * @param def {Boolean}
    * @return {boolean}
    * @private
    */
-  static _validateBoolean(bool) {
-    return bool === true || bool === 'true' || bool === 1 || bool === '1';
+  static _validateBoolean(bool, def) {
+    return typeof bool === 'boolean' ? bool : def;
   }
 
   /**
@@ -202,12 +210,12 @@ class Mp4Frag extends Transform {
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Buffer}
    */
-  get bufferListConcat() {
+  /*get bufferListConcat() {
     if (this._bufferList && this._bufferList.length > 0) {
       return Buffer.concat(this._bufferList);
     }
     return null;
-  }
+  }*/
 
   /**
    * @readonly
@@ -217,23 +225,35 @@ class Mp4Frag extends Transform {
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Buffer}
    */
-  get bufferConcat() {
+  /*get bufferConcat() {
     if (this._initialization && this._bufferList && this._bufferList.length > 0) {
       return Buffer.concat([this._initialization, ...this._bufferList]);
     }
     return null;
-  }
+  }*/
 
   /**
-   * @param {Number|String} sequence
-   * - Returns the Mp4 segment that corresponds to the HLS numbered sequence as a Buffer.
+   * @param {Number|String} sequence - Get segment of selected sequence
+   * - Returns the Mp4 segment that corresponds to the numbered sequence as a Buffer.
    * <br/>
-   * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence number.
+   * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
    * @returns {Buffer}
    */
-  getHlsSegment(sequence) {
-    return this.getHlsNamedSegment(`${this._hlsBase}${sequence}.m4s`);
+  getSegmentNumber(sequence) {
+    //return this.getHlsNamedSegment(`${this._hlsBase}${sequence}.m4s`);
+    sequence = Number.parseInt(sequence);
+    if (sequence >= 0 && this._bufferList && this._bufferList.length > 0) {
+      for (let i = 0; i < this._bufferList.length; i++) {
+        if (this._bufferList[i].sequence === sequence) {
+          return this._bufferList[i].segment;
+        }
+      }
+    }
+    return null;
   }
+
+  // todo getHlsSegmentMeta(sequence)
+  //  return object {sequence, duration, segment}
 
   /**
    * @param {String} name
@@ -242,7 +262,7 @@ class Mp4Frag extends Transform {
    * - Returns <b>Null</b> if there is no .m4s segment that corresponds to sequence name.
    * @returns {Buffer}
    */
-  getHlsNamedSegment(name) {
+  /*getHlsNamedSegment(name) {
     if (name && this._hlsList && this._hlsList.length > 0) {
       for (let i = 0; i < this._hlsList.length; i++) {
         if (this._hlsList[i].name === name) {
@@ -251,7 +271,7 @@ class Mp4Frag extends Transform {
       }
     }
     return null;
-  }
+  }*/
 
   /**
    * Search buffer for ftyp.
@@ -332,7 +352,7 @@ class Mp4Frag extends Transform {
       .toString('hex')
       .toUpperCase()}${audioString}"`;
     this._timestamp = Date.now();
-    if (this._hlsList && this._hlsListInit) {
+    if (this._hlsBase && this._hlsListInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
@@ -443,31 +463,30 @@ class Mp4Frag extends Transform {
     const currentTime = Date.now();
     this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
     this._timestamp = currentTime;
-    if (this._hlsList) {
-      this._hlsList.push({
+    if (this._bufferList) {
+      this._bufferList.push({
         sequence: ++this._sequence,
-        name: `${this._hlsBase}${this._sequence}.m4s`,
         segment: this._segment,
         duration: this._duration
       });
-      while (this._hlsList.length > this._hlsListSize) {
-        this._hlsList.shift();
-      }
-      let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:7\n';
-      m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
-      m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
-      m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
-      for (let i = 0; i < this._hlsList.length; i++) {
-        m3u8 += `#EXTINF:${this._hlsList[i].duration.toFixed(6)},\n`;
-        m3u8 += `${this._hlsList[i].name}\n`;
-      }
-      this._m3u8 = m3u8;
-    }
-    if (this._bufferList) {
-      this._bufferList.push(this._segment);
       while (this._bufferList.length > this._bufferListSize) {
         this._bufferList.shift();
+      }
+      if (this._hlsBase) {
+        let m3u8 = '#EXTM3U\n';
+        m3u8 += '#EXT-X-VERSION:7\n';
+        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
+        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._bufferList[0].sequence}\n`;
+        m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
+        for (
+          let i = this._bufferList.length > this._hlsListSize ? this._bufferList.length - this._hlsListSize : 0;
+          i < this._bufferList.length;
+          i++
+        ) {
+          m3u8 += `#EXTINF:${this._bufferList[i].duration.toFixed(6)},\n`;
+          m3u8 += `${this._hlsBase}${this._bufferList[i].sequence}.m4s\n`;
+        }
+        this._m3u8 = m3u8;
       }
     }
     if (this._readableState.pipesCount > 0) {
@@ -574,12 +593,9 @@ class Mp4Frag extends Transform {
     delete this._ftyp;
     delete this._ftypLength;
     delete this._m3u8;
-    if (this._hlsList) {
-      this._hlsList = [];
-      this._sequence = -1;
-    }
     if (this._bufferList) {
       this._bufferList = [];
+      this._sequence = -1;
     }
   }
 }
