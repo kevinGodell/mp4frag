@@ -483,7 +483,9 @@ class Mp4Frag extends Transform {
   _setSegment(chunk) {
     this._segment = chunk;
     const currentTime = Date.now();
-    this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
+    const elapsedTime = Math.max((currentTime - this._timestamp) / 1000, 1);
+    const targetDuration = Math.round(elapsedTime);
+    this._duration = elapsedTime.toFixed(6);
     this._timestamp = currentTime;
     this._sequence++;
     if (this._segments) {
@@ -500,11 +502,11 @@ class Mp4Frag extends Transform {
         let i = this._segments.length > this._hlsListSize ? this._segments.length - this._hlsListSize : 0;
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
-        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
+        m3u8 += `#EXT-X-TARGETDURATION:${targetDuration}\n`;
         m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._segments[i].sequence}\n`;
         m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
         for (i; i < this._segments.length; i++) {
-          m3u8 += `#EXTINF:${this._segments[i].duration.toFixed(6)},\n`;
+          m3u8 += `#EXTINF:${this._segments[i].duration},\n`;
           m3u8 += `${this._hlsBase}${this._segments[i].sequence}.m4s\n`;
         }
         this._m3u8 = m3u8;
