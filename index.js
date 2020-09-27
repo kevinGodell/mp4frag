@@ -72,7 +72,7 @@ class Mp4Frag extends Transform {
 
   /**
    *
-   * @param number {Number}
+   * @param number {*|Number|String}
    * @param def {Number}
    * @param min {Number}
    * @param max {Number}
@@ -80,6 +80,7 @@ class Mp4Frag extends Transform {
    * @private
    */
   static _validateNumber(number, def, min, max) {
+    number = Number.parseInt(number);
     if (isNaN(number)) {
       return def;
     }
@@ -94,7 +95,7 @@ class Mp4Frag extends Transform {
 
   /**
    *
-   * @param bool {*}
+   * @param bool {*|Boolean}
    * @param def {Boolean}
    * @return {boolean}
    * @private
