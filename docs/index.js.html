@@ -37,15 +37,19 @@ const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
-const _DEF = 4; // hls and buffer list size default
-const _MIN = 2; // hls and buffer list size minimum
-const _MAX = 10; // hls and buffer list size maximum
+const _HLS_DEF = 4; // hls list size default
+const _HLS_MIN = 2; // hls list size minimum
+const _HLS_MAX = 10; // hls list size maximum
+const _HLS_EXTRA_MAX = 5; // hls extra segments in memory
+const _SEG_DEF = 2; // segment list size default
+const _SEG_MIN = 2; // segment list size minimum
+const _SEG_MAX = 15; // segment list size maximum
 
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
  * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
  * Can also be used for storing past segments of the mp4 video in a buffer for later access.
- * Must use the following ffmpeg flags &lt;b>&lt;i>-movflags +frag_keyframe+empty_moov&lt;/i>&lt;/b> to generate a fmp4
+ * Must use the following ffmpeg flags &lt;b>&lt;i>-movflags +frag_keyframe+empty_moov+default_base_moof&lt;/i>&lt;/b> to generate a fmp4
  * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
  * @requires stream.Transform
  */
@@ -53,10 +57,11 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
-   * @param {String} [options.hlsBase] - Base name of files in fmp4 m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
-   * @param {Number} [options.hlsListSize] - Number of segments to keep in fmp4 m3u8 playlist. Must be an integer ranging from 2 to 10. Defaults to 4 if hlsBase is set and hlsListSize is not set.
-   * @param {Boolean} [options.hlsListInit] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created. Defaults to false.
-   * @param {Number} [options.bufferListSize] - Number of segments to keep buffered. Must be an integer ranging from 2 to 10. Not related to HLS settings.
+   * @param {String} [options.hlsBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
+   * @param {Number} [options.hlsListSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 10.
+   * @param {Number} [options.hlsListExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 5.
+   * @param {Boolean} [options.hlsListInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
+   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsBase. Must be an integer ranging from 2 to 15.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    * @throws Will throw an error if options.hlsBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
@@ -64,27 +69,29 @@ class Mp4Frag extends Transform {
     super(options);
     if (options) {
       if (options.hasOwnProperty('hlsBase')) {
-        if (/^[a-z_]+$/i.exec(options.hlsBase) === null) {
+        if (/[^a-z_]/gi.test(options.hlsBase)) {
           throw new Error('hlsBase must only contain letters and underscores');
         }
 
         this._hlsBase = options.hlsBase;
 
-        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit);
+        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit, true);
 
-        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _DEF, _MIN, _MAX);
+        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
 
-        this._hlsList = [];
+        this._hlsListExtra = Mp4Frag._validateNumber(options.hlsListExtra, 0, 0, _HLS_EXTRA_MAX);
 
-        this._sequence = -1;
-      }
+        this._segmentCount = this._hlsListSize + this._hlsListExtra;
 
-      if (options.hasOwnProperty('bufferListSize')) {
-        this._bufferListSize = Mp4Frag._validateNumber(options.bufferListSize, _DEF, _MIN, _MAX);
+        this._segments = [];
+      } else if (options.hasOwnProperty('segmentListSize')) {
+        this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_DEF, _SEG_MIN, _SEG_MAX);
 
-        this._bufferList = [];
+        this._segments = [];
       }
     }
+
+    this._sequence = -1;
 
     this._parseChunk = this._findFtyp;
 
@@ -92,15 +99,15 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   *
-   * @param number {Number}
-   * @param def {Number}
-   * @param min {Number}
-   * @param max {Number}
+   * @param {*|Number|String} number
+   * @param {Number} def
+   * @param {Number} min
+   * @param {Number} max
    * @return {Number}
    * @private
    */
   static _validateNumber(number, def, min, max) {
+    number = Number.parseInt(number);
     if (isNaN(number)) {
       return def;
     }
@@ -114,22 +121,22 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   *
-   * @param bool
-   * @return {boolean}
+   * @param {*|Boolean} bool
+   * @param {Boolean} def
+   * @return {Boolean}
    * @private
    */
-  static _validateBoolean(bool) {
-    return bool === true || bool === 'true' || bool === 1 || bool === '1';
+  static _validateBoolean(bool, def) {
+    return typeof bool === 'boolean' ? bool : def;
   }
 
   /**
    * @readonly
-   * @property {String} mime
-   * - Returns the mime codec information as a String.
+   * @property {String|null} mime
+   * - Returns the mime codec information as a &lt;b>String&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String}
+   * @returns {String|null}
    */
   get mime() {
     return this._mime || null;
@@ -137,11 +144,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Buffer} initialization
-   * - Returns the mp4 initialization fragment as a Buffer.
+   * @property {Buffer|null} initialization
+   * - Returns the Mp4 initialization fragment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {Buffer}
+   * @returns {Buffer|null}
    */
   get initialization() {
     return this._initialization || null;
@@ -149,11 +156,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Buffer} segment
-   * - Returns the latest Mp4 segment as a Buffer.
+   * @property {Buffer|null} segment
+   * - Returns the latest Mp4 segment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer}
+   * @returns {Buffer|null}
    */
   get segment() {
     return this._segment || null;
@@ -161,8 +168,27 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Object} segmentObject
+   * - Returns the latest Mp4 segment as an &lt;b>Object&lt;/b>.
+   * &lt;br/>
+   *  - &lt;b>&lt;code>{buffer, sequence, duration, timestamp}&lt;/code>&lt;/b>
+   * &lt;br/>
+   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * @returns {Object}
+   */
+  get segmentObject() {
+    return {
+      buffer: this.segment,
+      sequence: this.sequence,
+      duration: this.duration,
+      timestamp: this.timestamp
+    };
+  }
+
+  /**
+   * @readonly
    * @property {Number} timestamp
-   * - Returns the timestamp of the latest Mp4 segment as an Integer(milliseconds).
+   * - Returns the timestamp of the latest Mp4 segment as an &lt;b>Integer&lt;/b>(&lt;i>milliseconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Number}
@@ -174,7 +200,7 @@ class Mp4Frag extends Transform {
   /**
    * @readonly
    * @property {Number} duration
-   * - Returns the duration of latest Mp4 segment as a Float(seconds).
+   * - Returns the duration of latest Mp4 segment as a &lt;b>Float&lt;/b>(&lt;i>seconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Number}
@@ -185,11 +211,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String} m3u8
-   * - Returns the fmp4 HLS m3u8 playlist as a String.
+   * @property {String|null} m3u8
+   * - Returns the fmp4 HLS m3u8 playlist as a &lt;b>String&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String}
+   * @returns {String|null}
    */
   get m3u8() {
     return this._m3u8 || null;
@@ -198,7 +224,7 @@ class Mp4Frag extends Transform {
   /**
    * @readonly
    * @property {Number} sequence
-   * - Returns the latest sequence of the fmp4 HLS m3u8 playlist as an Integer.
+   * - Returns the sequence of the latest Mp4 segment as an &lt;b>Integer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Number}
@@ -209,72 +235,87 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Array} bufferList
-   * - Returns the buffered mp4 segments as an Array.
+   * @property {Array|null} segmentObjectList
+   * - Returns the Mp4 segments as an &lt;b>Array&lt;/b> of &lt;b>Objects&lt;/b>
+   * &lt;br/>
+   * - &lt;b>&lt;code>[{buffer, sequence, duration, timestamp},...]&lt;/code>&lt;/b>
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Array}
+   * @returns {Array|null}
    */
-  get bufferList() {
-    if (this._bufferList &amp;&amp; this._bufferList.length > 0) {
-      return this._bufferList;
+  get segmentObjectList() {
+    if (this._segments &amp;&amp; this._segments.length > 0) {
+      return this._segments;
     }
     return null;
   }
 
   /**
    * @readonly
-   * @property {Buffer} bufferListConcat
-   * - Returns the [Mp4Frag.bufferList]{@link Mp4Frag#bufferList} concatenated as a Buffer.
+   * @property {Buffer|null} segmentList
+   * - Returns the Mp4 segments concatenated as a single &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer}
+   * @returns {Buffer|null}
    */
-  get bufferListConcat() {
-    if (this._bufferList &amp;&amp; this._bufferList.length > 0) {
-      return Buffer.concat(this._bufferList);
+  get segmentList() {
+    if (this._segments &amp;&amp; this._segments.length > 0) {
+      const temp = this._segments.map(({ buffer }) => buffer);
+      return Buffer.concat(temp);
     }
     return null;
   }
 
   /**
    * @readonly
-   * @property {Buffer} bufferConcat
-   * - Returns the [Mp4Frag.initialization]{@link Mp4Frag#initialization} and [Mp4Frag.bufferList]{@link Mp4Frag#bufferList} concatenated as a Buffer.
+   * @property {Buffer|null} buffer
+   * - Returns the [Mp4Frag.initialization]{@link Mp4Frag#initialization} and [Mp4Frag.segmentList]{@link Mp4Frag#segmentList} concatenated as a single &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer}
+   * @returns {Buffer|null}
    */
-  get bufferConcat() {
-    if (this._initialization &amp;&amp; this._bufferList &amp;&amp; this._bufferList.length > 0) {
-      return Buffer.concat([this._initialization, ...this._bufferList]);
+  get buffer() {
+    if (this._initialization &amp;&amp; this._segments &amp;&amp; this._segments.length > 0) {
+      const temp = this._segments.map(({ buffer }) => buffer);
+      return Buffer.concat([this._initialization, ...temp]);
     }
     return null;
   }
 
   /**
    * @param {Number|String} sequence
-   * - Returns the Mp4 segment that corresponds to the HLS numbered sequence as a Buffer.
+   * - Returns the Mp4 segment that corresponds to the numbered sequence as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if there is no .m4s segment that corresponds to sequence number.
-   * @returns {Buffer}
+   * - Returns &lt;b>Null&lt;/b> if there is no segment that corresponds to sequence number.
+   * @returns {Buffer|null}
    */
-  getHlsSegment(sequence) {
-    return this.getHlsNamedSegment(`${this._hlsBase}${sequence}.m4s`);
+  getSegment(sequence) {
+    sequence = Number.parseInt(sequence);
+    if (sequence >= 0 &amp;&amp; this._segments &amp;&amp; this._segments.length > 0) {
+      for (let i = 0; i &lt; this._segments.length; i++) {
+        if (this._segments[i].sequence === sequence) {
+          return this._segments[i].buffer;
+        }
+      }
+    }
+    return null;
   }
 
   /**
-   * @param {String} name
-   * - Returns the Mp4 segment that corresponds to the HLS named sequence as a Buffer.
+   * @param {Number|String} sequence
+   * - Returns the Mp4 segment that corresponds to the numbered sequence as an &lt;b>Object&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if there is no .m4s segment that corresponds to sequence name.
-   * @returns {Buffer}
+   * - &lt;b>&lt;code>{buffer, sequence, duration, timestamp}&lt;/code>&lt;/b>
+   * &lt;br/>
+   * - Returns &lt;b>Null&lt;/b> if there is no segment that corresponds to sequence number.
+   * @returns {Object|null}
    */
-  getHlsNamedSegment(name) {
-    if (name &amp;&amp; this._hlsList &amp;&amp; this._hlsList.length > 0) {
-      for (let i = 0; i &lt; this._hlsList.length; i++) {
-        if (this._hlsList[i].name === name) {
-          return this._hlsList[i].segment;
+  getSegmentObject(sequence) {
+    sequence = Number.parseInt(sequence);
+    if (sequence >= 0 &amp;&amp; this._segments &amp;&amp; this._segments.length > 0) {
+      for (let i = 0; i &lt; this._segments.length; i++) {
+        if (this._segments[i].sequence === sequence) {
+          return this._segments[i];
         }
       }
     }
@@ -360,10 +401,11 @@ class Mp4Frag extends Transform {
       .toString('hex')
       .toUpperCase()}${audioString}"`;
     this._timestamp = Date.now();
-    if (this._hlsList &amp;&amp; this._hlsListInit) {
+
+    // todo should not create playlist until first segment is cut because targetduration should not change
+    if (this._hlsBase &amp;&amp; this._hlsListInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
-      //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
       m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
@@ -378,7 +420,7 @@ class Mp4Frag extends Transform {
      * @property {Buffer} Object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
      * @property {String} Object.m3u8 - [Mp4Frag.m3u8]{@link Mp4Frag#m3u8}
      */
-    this.emit('initialized', { mime: this._mime, initialization: this._initialization, m3u8: this._m3u8 || null });
+    this.emit('initialized', { mime: this.mime, initialization: this.initialization, m3u8: this.m3u8 });
   }
 
   /**
@@ -472,32 +514,29 @@ class Mp4Frag extends Transform {
     const currentTime = Date.now();
     this._duration = Math.max((currentTime - this._timestamp) / 1000, 1);
     this._timestamp = currentTime;
-    if (this._hlsList) {
-      this._hlsList.push({
-        sequence: ++this._sequence,
-        name: `${this._hlsBase}${this._sequence}.m4s`,
-        segment: this._segment,
-        duration: this._duration
+    this._sequence++;
+    if (this._segments) {
+      this._segments.push({
+        buffer: this._segment,
+        sequence: this._sequence,
+        duration: this._duration,
+        timestamp: this._timestamp
       });
-      while (this._hlsList.length > this._hlsListSize) {
-        this._hlsList.shift();
+      while (this._segments.length > this._segmentCount) {
+        this._segments.shift();
       }
-      let m3u8 = '#EXTM3U\n';
-      m3u8 += '#EXT-X-VERSION:7\n';
-      //m3u8 += '#EXT-X-ALLOW-CACHE:NO\n';
-      m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
-      m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._hlsList[0].sequence}\n`;
-      m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
-      for (let i = 0; i &lt; this._hlsList.length; i++) {
-        m3u8 += `#EXTINF:${this._hlsList[i].duration.toFixed(6)},\n`;
-        m3u8 += `${this._hlsList[i].name}\n`;
-      }
-      this._m3u8 = m3u8;
-    }
-    if (this._bufferList) {
-      this._bufferList.push(this._segment);
-      while (this._bufferList.length > this._bufferListSize) {
-        this._bufferList.shift();
+      if (this._hlsBase) {
+        let i = this._segments.length > this._hlsListSize ? this._segments.length - this._hlsListSize : 0;
+        let m3u8 = '#EXTM3U\n';
+        m3u8 += '#EXT-X-VERSION:7\n';
+        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(this._duration)}\n`;
+        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._segments[i].sequence}\n`;
+        m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
+        for (i; i &lt; this._segments.length; i++) {
+          m3u8 += `#EXTINF:${this._segments[i].duration.toFixed(6)},\n`;
+          m3u8 += `${this._hlsBase}${this._segments[i].sequence}.m4s\n`;
+        }
+        this._m3u8 = m3u8;
       }
     }
     if (this._readableState.pipesCount > 0) {
@@ -507,9 +546,13 @@ class Mp4Frag extends Transform {
      * Fires when the latest Mp4 segment is parsed from the piped data.
      * @event Mp4Frag#segment
      * @type {Event}
-     * @property {Buffer} segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
+     * @property {Object} Object - [Mp4Frag.segmentObject]{@link Mp4Frag#segmentObject}
+     * @property {Buffer} Object.buffer - [Mp4Frag.segment]{@link Mp4Frag#segment}
+     * @property {Number} Object.sequence - [Mp4Frag.sequence]{@link Mp4Frag#sequence}
+     * @property {Number} Object.duration - [Mp4Frag.duration]{@link Mp4Frag#duration}
+     * @property {Number} Object.timestamp - [Mp4Frag.timestamp]{@link Mp4Frag#timestamp}
      */
-    this.emit('segment', this._segment);
+    this.emit('segment', this.segmentObject);
   }
 
   /**
@@ -591,6 +634,10 @@ class Mp4Frag extends Transform {
    */
   resetCache() {
     this._parseChunk = this._findFtyp;
+    this._sequence = -1;
+    if (this._segments) {
+      this._segments = [];
+    }
     delete this._mime;
     delete this._initialization;
     delete this._segment;
@@ -604,13 +651,6 @@ class Mp4Frag extends Transform {
     delete this._ftyp;
     delete this._ftypLength;
     delete this._m3u8;
-    if (this._hlsList) {
-      this._hlsList = [];
-      this._sequence = -1;
-    }
-    if (this._bufferList) {
-      this._bufferList = [];
-    }
   }
 }
 
@@ -631,7 +671,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Sun Aug 30 2020 18:36:15 GMT-0500 (Central Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Sun Sep 27 2020 14:09:29 GMT-0500 (Central Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
