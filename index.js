@@ -9,10 +9,10 @@ const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
-const _HLS_DEF = 4; // hls list size default
-const _HLS_MIN = 2; // hls list size minimum
-const _HLS_MAX = 10; // hls list size maximum
-const _HLS_EXTRA_MAX = 5; // hls extra segments in memory
+const _HLS_DEF = 4; // hls playlist size default
+const _HLS_MIN = 2; // hls playlist size minimum
+const _HLS_MAX = 10; // hls playlist size maximum
+const _HLS_EXTRA_MAX = 5; // hls playlist extra segments in memory
 const _SEG_DEF = 2; // segment list size default
 const _SEG_MIN = 2; // segment list size minimum
 const _SEG_MAX = 15; // segment list size maximum
@@ -29,31 +29,31 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
-   * @param {String} [options.hlsBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
-   * @param {Number} [options.hlsListSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 10.
-   * @param {Number} [options.hlsListExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 5.
-   * @param {Boolean} [options.hlsListInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
-   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsBase. Must be an integer ranging from 2 to 15.
+   * @param {String} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
+   * @param {Number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 10.
+   * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 5.
+   * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
+   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 15.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
-   * @throws Will throw an error if options.hlsBase contains characters other than letters(a-zA-Z) and underscores(_).
+   * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
     super(options);
     if (options) {
-      if (options.hasOwnProperty('hlsBase')) {
-        if (/[^a-z_]/gi.test(options.hlsBase)) {
-          throw new Error('hlsBase must only contain letters and underscores');
+      if (options.hasOwnProperty('hlsPlaylistBase')) {
+        if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
+          throw new Error('hlsPlaylistBase must only contain letters and underscores');
         }
 
-        this._hlsBase = options.hlsBase;
+        this._hlsPlaylistBase = options.hlsPlaylistBase;
 
-        this._hlsListInit = Mp4Frag._validateBoolean(options.hlsListInit, true);
+        this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, true);
 
-        this._hlsListSize = Mp4Frag._validateNumber(options.hlsListSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
+        this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
 
-        this._hlsListExtra = Mp4Frag._validateNumber(options.hlsListExtra, 0, 0, _HLS_EXTRA_MAX);
+        this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, 0, 0, _HLS_EXTRA_MAX);
 
-        this._segmentCount = this._hlsListSize + this._hlsListExtra;
+        this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
 
         this._segments = [];
       } else if (options.hasOwnProperty('segmentCount')) {
@@ -374,12 +374,12 @@ class Mp4Frag extends Transform {
       .toUpperCase()}${audioString}"`;
     this._timestamp = Date.now();
     // todo should not create playlist until first segment is cut because targetduration should not change
-    if (this._hlsBase && this._hlsListInit) {
+    if (this._hlsPlaylistBase && this._hlsPlaylistInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
-      m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
+      m3u8 += `#EXT-X-MAP:URI="init-${this._hlsPlaylistBase}.mp4"\n`;
       this._m3u8 = m3u8;
     }
     /**
@@ -484,7 +484,6 @@ class Mp4Frag extends Transform {
     this._segment = chunk;
     const currentTime = Date.now();
     const elapsedTime = Math.max((currentTime - this._timestamp) / 1000, 1);
-    const targetDuration = Math.round(elapsedTime);
     this._duration = elapsedTime.toFixed(6);
     this._timestamp = currentTime;
     this._sequence++;
@@ -498,17 +497,22 @@ class Mp4Frag extends Transform {
       while (this._segments.length > this._segmentCount) {
         this._segments.shift();
       }
-      if (this._hlsBase) {
-        let i = this._segments.length > this._hlsListSize ? this._segments.length - this._hlsListSize : 0;
+      if (this._hlsPlaylistBase) {
+        let i = this._segments.length > this._hlsPlaylistSize ? this._segments.length - this._hlsPlaylistSize : 0;
+        const mediaSequence = this._segments[i].sequence;
+        let targetDuration = 1;
+        let segments = '';
+        for (i; i < this._segments.length; i++) {
+          targetDuration = Math.max(targetDuration, this._segments[i].duration);
+          segments += `#EXTINF:${this._segments[i].duration},\n`;
+          segments += `${this._hlsPlaylistBase}${this._segments[i].sequence}.m4s\n`;
+        }
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
-        m3u8 += `#EXT-X-TARGETDURATION:${targetDuration}\n`;
-        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${this._segments[i].sequence}\n`;
-        m3u8 += `#EXT-X-MAP:URI="init-${this._hlsBase}.mp4"\n`;
-        for (i; i < this._segments.length; i++) {
-          m3u8 += `#EXTINF:${this._segments[i].duration},\n`;
-          m3u8 += `${this._hlsBase}${this._segments[i].sequence}.m4s\n`;
-        }
+        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(targetDuration)}\n`;
+        m3u8 += `#EXT-X-MEDIA-SEQUENCE:${mediaSequence}\n`;
+        m3u8 += `#EXT-X-MAP:URI="init-${this._hlsPlaylistBase}.mp4"\n`;
+        m3u8 += segments;
         this._m3u8 = m3u8;
       }
     }
