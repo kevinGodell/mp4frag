@@ -66,7 +66,7 @@ const params = [
   'pipe:1'
 ];
 
-const mp4frag = new Mp4Frag({ hlsBase: 'test', hlsListInit: true });
+const mp4frag = new Mp4Frag({ hlsPlaylistBase: 'test', hlsPlaylistInit: true });
 
 mp4frag.once('initialized', data => {
   assert(
