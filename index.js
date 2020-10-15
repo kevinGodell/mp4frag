@@ -143,14 +143,14 @@ class Mp4Frag extends Transform {
    * @property {Object} segmentObject
    * - Returns the latest Mp4 segment as an <b>Object</b>.
    * <br/>
-   *  - <b><code>{buffer, sequence, duration, timestamp}</code></b>
+   *  - <b><code>{segment, sequence, duration, timestamp}</code></b>
    * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1}</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Object}
    */
   get segmentObject() {
     return {
-      buffer: this.segment,
+      segment: this.segment,
       sequence: this.sequence,
       duration: this.duration,
       timestamp: this.timestamp
