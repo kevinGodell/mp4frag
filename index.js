@@ -610,6 +610,7 @@ class Mp4Frag extends Transform {
    * Clear cached values
    */
   resetCache() {
+    this.emit('reset');
     this._parseChunk = this._findFtyp;
     this._sequence = -1;
     if (this._segments) {
