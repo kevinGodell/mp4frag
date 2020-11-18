@@ -483,7 +483,7 @@ class Mp4Frag extends Transform {
   _setSegment(chunk) {
     this._segment = chunk;
     const currentTime = Date.now();
-    const elapsedTime = Math.max((currentTime - this._timestamp) / 1000, 1);
+    const elapsedTime = (currentTime - this._timestamp) / 1000;
     this._duration = elapsedTime.toFixed(6);
     this._timestamp = currentTime;
     this._sequence++;
@@ -509,7 +509,7 @@ class Mp4Frag extends Transform {
         }
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
-        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(targetDuration)}\n`;
+        m3u8 += `#EXT-X-TARGETDURATION:${Math.round(targetDuration) || 1}\n`;
         m3u8 += `#EXT-X-MEDIA-SEQUENCE:${mediaSequence}\n`;
         m3u8 += `#EXT-X-MAP:URI="init-${this._hlsPlaylistBase}.mp4"\n`;
         m3u8 += segments;
