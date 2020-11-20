@@ -105,7 +105,31 @@ class Mp4Frag extends Transform {
   /**
    * @readonly
    * @property {String|null} mime
-   * - Returns the mime codec information as a <b>String</b>.
+   * - Returns the audio codec information as a <b>String</b>.
+   * <br/>
+   * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {String|null}
+   */
+  get audioCodec() {
+    return this._audioCodec || null;
+  }
+
+  /**
+   * @readonly
+   * @property {String|null} mime
+   * - Returns the video codec information as a <b>String</b>.
+   * <br/>
+   * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {String|null}
+   */
+  get videoCodec() {
+    return this._videoCodec || null;
+  }
+
+  /**
+   * @readonly
+   * @property {String|null} mime
+   * - Returns the mime type information as a <b>String</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
    * @returns {String|null}
@@ -358,22 +382,28 @@ class Mp4Frag extends Transform {
    */
   _parseMoov(value) {
     this._initialization = value;
-    let audioString = '';
-    if (this._initialization.indexOf(_MP4A) !== -1) {
-      audioString = ', mp4a.40.2';
+    const videoCodecIndex = this._initialization.indexOf(_AVCC);
+    const audioCodecIndex = this._initialization.indexOf(_MP4A);
+    const codecs = [];
+    if (videoCodecIndex !== -1) {
+      // todo check for other types of video codecs
+      this._videoCodec = `avc1.${this._initialization
+        .slice(videoCodecIndex + 5, videoCodecIndex + 8)
+        .toString('hex')
+        .toUpperCase()}`;
+      codecs.push(this._videoCodec);
     }
-    let index = this._initialization.indexOf(_AVCC);
-    if (index === -1) {
-      this.emit('error', new Error(`${_AVCC.toString()} codec info not found.`));
+    if (audioCodecIndex !== -1) {
+      // todo check for other types of audio codecs
+      this._audioCodec = 'mp4a.40.2';
+      codecs.push(this._audioCodec);
+    }
+    if (codecs.length === 0) {
+      this.emit('error', new Error(`codecs not found.`));
       return;
     }
-    index += 5;
-    this._mime = `video/mp4; codecs="avc1.${this._initialization
-      .slice(index, index + 3)
-      .toString('hex')
-      .toUpperCase()}${audioString}"`;
+    this._mime = `${this.videoCodec !== null ? 'video' : 'audio'}/mp4; codecs="${codecs.join(', ')}"`;
     this._timestamp = Date.now();
-    // todo should not create playlist until first segment is cut because targetduration should not change
     if (this._hlsPlaylistBase && this._hlsPlaylistInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
@@ -610,6 +640,11 @@ class Mp4Frag extends Transform {
    * Clear cached values
    */
   resetCache() {
+    /**
+     * Fires when resetCache() is called.
+     * @event Mp4Frag#reset
+     * @type {Event}
+     */
     this.emit('reset');
     this._parseChunk = this._findFtyp;
     this._sequence = -1;
@@ -617,6 +652,8 @@ class Mp4Frag extends Transform {
       this._segments = [];
     }
     delete this._mime;
+    delete this._videoCodec;
+    delete this._audioCodec;
     delete this._initialization;
     delete this._segment;
     delete this._timestamp;
