@@ -37,11 +37,23 @@ const params = [
   '-i',
   'testsrc=size=1280x720:rate=20',
 
+  '-f',
+  'lavfi',
+  '-i',
+  'anoisesrc=c=pink:r=44100:a=0.5',
+
+  '-map',
+  '0:0',
+  '-map',
+  '1',
+
   /*'-rtsp_transport', 'tcp',
     '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp',*/
 
   /* set output flags */
-  '-an',
+  //'-an',
+  '-c:a',
+  'aac',
   '-c:v',
   'libx264',
   '-movflags',
@@ -70,7 +82,10 @@ const params = [
 const mp4frag = new Mp4Frag();
 
 mp4frag.once('initialized', data => {
-  assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+  assert(
+    data.mime === 'video/mp4; codecs="avc1.4D401F, mp4a.40.2"',
+    `${data.mime} !== video/mp4; codecs="avc1.4D401F, mp4a.40.2"`
+  );
 });
 
 mp4frag.on('segment', data => {
