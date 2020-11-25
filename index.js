@@ -513,8 +513,7 @@ class Mp4Frag extends Transform {
   _setSegment(chunk) {
     this._segment = chunk;
     const currentTime = Date.now();
-    const elapsedTime = (currentTime - this._timestamp) / 1000;
-    this._duration = elapsedTime.toFixed(6);
+    this._duration = (currentTime - this._timestamp) / 1000;
     this._timestamp = currentTime;
     this._sequence++;
     if (this._segments) {
@@ -534,7 +533,7 @@ class Mp4Frag extends Transform {
         let segments = '';
         for (i; i < this._segments.length; i++) {
           targetDuration = Math.max(targetDuration, this._segments[i].duration);
-          segments += `#EXTINF:${this._segments[i].duration},\n`;
+          segments += `#EXTINF:${this._segments[i].duration.toFixed(6)},\n`;
           segments += `${this._hlsPlaylistBase}${this._segments[i].sequence}.m4s\n`;
         }
         let m3u8 = '#EXTM3U\n';
