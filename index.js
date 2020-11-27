@@ -11,11 +11,11 @@ const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
 const _HLS_DEF = 4; // hls playlist size default
 const _HLS_MIN = 2; // hls playlist size minimum
-const _HLS_MAX = 10; // hls playlist size maximum
-const _HLS_EXTRA_MAX = 5; // hls playlist extra segments in memory
+const _HLS_MAX = 20; // hls playlist size maximum
+const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory
 const _SEG_DEF = 2; // segment list size default
 const _SEG_MIN = 2; // segment list size minimum
-const _SEG_MAX = 15; // segment list size maximum
+const _SEG_MAX = 30; // segment list size maximum
 
 /**
  * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
@@ -30,10 +30,10 @@ class Mp4Frag extends Transform {
    * @constructor
    * @param {Object} [options] - Configuration options.
    * @param {String} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
-   * @param {Number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 10.
-   * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 5.
+   * @param {Number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
+   * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
    * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
-   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 15.
+   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
