@@ -64,9 +64,9 @@ const params = [
   'pipe:1'
 ];
 
-const hlsBase = 'someHlsBase';
+const hlsBase = 'some_HlsBase';
 
-const mp4frag = new Mp4Frag({ hlsBase: hlsBase, hlsListSize: 5 });
+const mp4frag = new Mp4Frag({ hlsPlaylistBase: hlsBase, hlsPlaylistSize: 5 });
 
 mp4frag.once('initialized', data => {
   assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
