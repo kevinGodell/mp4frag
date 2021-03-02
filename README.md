@@ -9,18 +9,33 @@ Parser that works with ffmpeg to read piped data and fragment mp4 into an initia
 
 Currently being used in [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-streamer).
 
+# Breaking Changes
+## Constructor options have changed
+* `hlsBase` => `hlsPlaylistBase` _string_, accepts `_`, `a-z`, and `A-Z`
+* `hlsSize` => `hlsPlaylistSize` _integer_, ranges from `2` to `20`, defaults to `4`
+* `hlsInit` => `hlsPlaylistInit` _boolean_, defaults to `true`
+* `bufferListSize` => `segmentCount` _integer_, ranges from `2` to `30`, defaults to `2` 
+## Segment event has changed
+```js
+mp4frag.on('segment', data => {
+  console.log(data);
+});
+```
+* Previously, data was a Buffer containing a single segment.
+* Currently, data is an object structured as `{ buffer, sequence, duration, timestamp }`
+
 # Options for a new instance of Mp4Frag
 
-#### segmentCount: unsigned int (2 - 15), *setting this value will store specified number of media segments in the buffer*
-* will be ignored if setting hlsBase
+#### segmentCount: integer (2 - 30), *setting this value will store specified number of media segments in the buffer*
+* will be ignored if setting `hlsPlaylistBase`
 ```javascript
 const mp4frag = new Mp4Frag({segmentCount: 3});
 ```
 
-#### hlsBase: 'string', *setting this will generate a live fmp4 HLS m3u8 playlist*
-#### hlsListSize: unsigned int (2 - 15), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
+#### hlsPlaylistBase: string (`_`, `a-z`, and `A-Z`), *setting this will generate a live fmp4 HLS m3u8 playlist*
+#### hlsListSize: integer (2 - 20), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
 ```javascript
-const mp4frag = new Mp4Frag({hlsListSize: 4, hlsBase: 'myString'});
+const mp4frag = new Mp4Frag({hlsPlaylistSize: 4, hlsPlaylistBase: 'my_String'});
 ```
 
 # Possible usage examples
@@ -32,7 +47,7 @@ const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
 
-const mp4frag = new Mp4Frag({hlsListSize: 3, hlsBase: 'back_yard'});
+const mp4frag = new Mp4Frag({hlsPlaylistSize: 3, hlsPlaylistBase: 'back_yard'});
 
 const ffmpeg = spawn(
     'ffmpeg',
