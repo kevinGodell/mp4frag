@@ -553,7 +553,7 @@ class Mp4Frag extends Transform {
      * @event Mp4Frag#segment
      * @type {Event}
      * @property {Object} Object - [Mp4Frag.segmentObject]{@link Mp4Frag#segmentObject}
-     * @property {Buffer} Object.buffer - [Mp4Frag.segment]{@link Mp4Frag#segment}
+     * @property {Buffer} Object.segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
      * @property {Number} Object.sequence - [Mp4Frag.sequence]{@link Mp4Frag#sequence}
      * @property {Number} Object.duration - [Mp4Frag.duration]{@link Mp4Frag#duration}
      * @property {Number} Object.timestamp - [Mp4Frag.timestamp]{@link Mp4Frag#timestamp}
