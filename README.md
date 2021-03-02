@@ -1,7 +1,5 @@
 # mp4frag
 ###### [![Build Status](https://travis-ci.org/kevinGodell/mp4frag.svg?branch=master)](https://travis-ci.org/kevinGodell/mp4frag) [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
-
-###### [![NPM](https://nodei.co/npm/mp4frag.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/mp4frag/)
 Parser that works with ffmpeg to read piped data and fragment mp4 into an initialization segment and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist.
 ***You must use the correct output flags with ffmpeg to create a compatible fragmented mp4 format similar to the following real world examples:***
 * `ffmpeg -loglevel quiet -rtsp_transport tcp -i rtsp://192.168.1.21:554/user=admin_password=pass_channel=0_stream=1.sdp?real_stream -reset_timestamps 1 -an -c:v copy -f mp4 -movflags +frag_every_frame+empty_moov+default_base_moof -min_frag_duration 500000 pipe:1`
