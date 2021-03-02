@@ -37,7 +37,7 @@ const mp4frag = new Mp4Frag({segmentCount: 3});
 ```
 
 #### hlsPlaylistBase: string (`_`, `a-z`, and `A-Z`), *setting this will generate a live fmp4 HLS m3u8 playlist*
-#### hlsListSize: integer (2 - 20), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
+#### hlsPlaylistSize: integer (2 - 20), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
 ```javascript
 const mp4frag = new Mp4Frag({hlsPlaylistSize: 4, hlsPlaylistBase: 'my_String'});
 ```
