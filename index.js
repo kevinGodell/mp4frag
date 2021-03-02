@@ -42,7 +42,7 @@ class Mp4Frag extends Transform {
     if (options) {
       if (options.hasOwnProperty('hlsPlaylistBase')) {
         if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
-          throw new Error('hlsPlaylistBase must only contain letters and underscores');
+          throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
         }
 
         this._hlsPlaylistBase = options.hlsPlaylistBase;
