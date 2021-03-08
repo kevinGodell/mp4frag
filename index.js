@@ -177,7 +177,8 @@ class Mp4Frag extends Transform {
       segment: this.segment,
       sequence: this.sequence,
       duration: this.duration,
-      timestamp: this.timestamp
+      timestamp: this.timestamp,
+      keyframe: this._keyframe
     };
   }
 
@@ -227,6 +228,18 @@ class Mp4Frag extends Transform {
    */
   get sequence() {
     return Number.isInteger(this._sequence) ? this._sequence : -1;
+  }
+
+  /**
+   * @readonly
+   * @property {Number} keyframe
+   * - Returns the nal keyframe index of the latest Mp4 segment as an <b>Integer</b>.
+   * <br/>
+   * - Returns <b>-1</b> if segment contains no keyframe nal.
+   * @returns {Number}
+   */
+  get keyframe() {
+    return Number.isInteger(this._keyframe) ? this._keyframe : -1;
   }
 
   /**
@@ -505,6 +518,33 @@ class Mp4Frag extends Transform {
   }
 
   /**
+   * Set keyframe index.
+   * @private
+   */
+  _setKeyframe() {
+    // derived from https://github.com/video-dev/hls.js/blob/729a36d409cc78cc391b17a0680eaf743f9213fb/tools/mp4-inspect.js#L48
+    for (let i = this._moofLength + 8, nalIndex = 0, nalLength; i < this._mdatLength; i += nalLength, ++nalIndex) {
+      nalLength = this._segment.readUInt32BE(i);
+      i += 4;
+      if ((this._segment[i] & 0x1f) === 0x05) {
+        this._keyframe = nalIndex;
+        return;
+      }
+    }
+    this._keyframe = -1;
+  }
+
+  /**
+   * Set duration and timestamp.
+   * @private
+   */
+  _setDurTime() {
+    const currentTime = Date.now();
+    this._duration = (currentTime - this._timestamp) / 1000;
+    this._timestamp = currentTime;
+  }
+
+  /**
    * Process current segment.
    * @fires Mp4Frag#segment
    * @param chunk {Buffer}
@@ -512,16 +552,16 @@ class Mp4Frag extends Transform {
    */
   _setSegment(chunk) {
     this._segment = chunk;
-    const currentTime = Date.now();
-    this._duration = (currentTime - this._timestamp) / 1000;
-    this._timestamp = currentTime;
+    this._setKeyframe();
+    this._setDurTime();
     this._sequence++;
     if (this._segments) {
       this._segments.push({
         buffer: this._segment,
         sequence: this._sequence,
         duration: this._duration,
-        timestamp: this._timestamp
+        timestamp: this._timestamp,
+        keyframe: this._keyframe
       });
       while (this._segments.length > this._segmentCount) {
         this._segments.shift();
