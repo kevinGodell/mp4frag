@@ -178,7 +178,7 @@ class Mp4Frag extends Transform {
       sequence: this.sequence,
       duration: this.duration,
       timestamp: this.timestamp,
-      keyframe: this._keyframe
+      keyframe: this.keyframe
     };
   }
 
@@ -247,7 +247,7 @@ class Mp4Frag extends Transform {
    * @property {Array|null} segmentObjectList
    * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
    * <br/>
-   * - <b><code>[{buffer, sequence, duration, timestamp},...]</code></b>
+   * - <b><code>[{segment, sequence, duration, timestamp},...]</code></b>
    * <br/>
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Array|null}
@@ -255,6 +255,36 @@ class Mp4Frag extends Transform {
   get segmentObjectList() {
     if (this._segments && this._segments.length > 0) {
       return this._segments;
+    }
+    return null;
+  }
+
+  get firstKeyframeBuffer() {
+    if (this._initialization && this._segments && this._segments.length > 0) {
+      for (let i = 0; i < this._segments.length; ++i) {
+        if (this._segments[i].keyframe > -1) {
+          const temp = [this._initialization];
+          for (i; i < this._segments.length; ++i) {
+            temp.push(this._segments[i].segment);
+          }
+          return Buffer.concat(temp);
+        }
+      }
+    }
+    return null;
+  }
+
+  get lastKeyframeBuffer() {
+    if (this._initialization && this._segments && this._segments.length > 0) {
+      for (let i = this._segments.length - 1; i >= 0; --i) {
+        if (this._segments[i].keyframe > -1) {
+          const temp = [this._initialization];
+          for (i; i < this._segments.length; ++i) {
+            temp.push(this._segments[i].segment);
+          }
+          return Buffer.concat(temp);
+        }
+      }
     }
     return null;
   }
@@ -269,7 +299,7 @@ class Mp4Frag extends Transform {
    */
   get segmentList() {
     if (this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+      const temp = this._segments.map(({ segment }) => segment);
       return Buffer.concat(temp);
     }
     return null;
@@ -285,7 +315,7 @@ class Mp4Frag extends Transform {
    */
   get buffer() {
     if (this._initialization && this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+      const temp = this._segments.map(({ segment }) => segment);
       return Buffer.concat([this._initialization, ...temp]);
     }
     return null;
@@ -303,7 +333,7 @@ class Mp4Frag extends Transform {
     if (sequence >= 0 && this._segments && this._segments.length > 0) {
       for (let i = 0; i < this._segments.length; i++) {
         if (this._segments[i].sequence === sequence) {
-          return this._segments[i].buffer;
+          return this._segments[i].segment;
         }
       }
     }
@@ -314,7 +344,7 @@ class Mp4Frag extends Transform {
    * @param {Number|String} sequence
    * - Returns the Mp4 segment that corresponds to the numbered sequence as an <b>Object</b>.
    * <br/>
-   * - <b><code>{buffer, sequence, duration, timestamp}</code></b>
+   * - <b><code>{segment, sequence, duration, timestamp}</code></b>
    * <br/>
    * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
    * @returns {Object|null}
@@ -557,7 +587,7 @@ class Mp4Frag extends Transform {
     this._sequence++;
     if (this._segments) {
       this._segments.push({
-        buffer: this._segment,
+        segment: this._segment,
         sequence: this._sequence,
         duration: this._duration,
         timestamp: this._timestamp,
