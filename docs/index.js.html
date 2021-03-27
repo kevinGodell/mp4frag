@@ -99,38 +99,6 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * @param {*|Number|String} number
-   * @param {Number} def
-   * @param {Number} min
-   * @param {Number} max
-   * @return {Number}
-   * @private
-   */
-  static _validateNumber(number, def, min, max) {
-    number = Number.parseInt(number);
-    if (isNaN(number)) {
-      return def;
-    }
-    if (number &lt; min) {
-      return min;
-    }
-    if (number > max) {
-      return max;
-    }
-    return number;
-  }
-
-  /**
-   * @param {*|Boolean} bool
-   * @param {Boolean} def
-   * @return {Boolean}
-   * @private
-   */
-  static _validateBoolean(bool, def) {
-    return typeof bool === 'boolean' ? bool : def;
-  }
-
-  /**
    * @readonly
    * @property {String|null} mime
    * - Returns the audio codec information as a &lt;b>String&lt;/b>.
@@ -205,7 +173,8 @@ class Mp4Frag extends Transform {
       segment: this.segment,
       sequence: this.sequence,
       duration: this.duration,
-      timestamp: this.timestamp
+      timestamp: this.timestamp,
+      keyframe: this.keyframe
     };
   }
 
@@ -259,10 +228,22 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Number} keyframe
+   * - Returns the nal keyframe index of the latest Mp4 segment as an &lt;b>Integer&lt;/b>.
+   * &lt;br/>
+   * - Returns &lt;b>-1&lt;/b> if segment contains no keyframe nal.
+   * @returns {Number}
+   */
+  get keyframe() {
+    return Number.isInteger(this._keyframe) ? this._keyframe : -1;
+  }
+
+  /**
+   * @readonly
    * @property {Array|null} segmentObjectList
    * - Returns the Mp4 segments as an &lt;b>Array&lt;/b> of &lt;b>Objects&lt;/b>
    * &lt;br/>
-   * - &lt;b>&lt;code>[{buffer, sequence, duration, timestamp},...]&lt;/code>&lt;/b>
+   * - &lt;b>&lt;code>[{segment, sequence, duration, timestamp, keyframe},...]&lt;/code>&lt;/b>
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Array|null}
@@ -270,6 +251,27 @@ class Mp4Frag extends Transform {
   get segmentObjectList() {
     if (this._segments &amp;&amp; this._segments.length > 0) {
       return this._segments;
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number} startIndex - positive or negative starting index for segment
+   * @param {Boolean} isKeyframe - filter starting segment to contain keyframe
+   * - Returns the Mp4 segments as an &lt;b>Array&lt;/b> of &lt;b>Objects&lt;/b>
+   * &lt;br/>
+   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns &lt;b>Null&lt;/b> if no segment found when filtered with startIndex and isKeyframe.
+   * @returns {Array|null}
+   */
+  getSegmentObjectList(startIndex, isKeyframe) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [];
+      for (let i = segmentIndex; i &lt; this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
+      return temp;
     }
     return null;
   }
@@ -284,7 +286,28 @@ class Mp4Frag extends Transform {
    */
   get segmentList() {
     if (this._segments &amp;&amp; this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+      const temp = this._segments.map(({ segment }) => segment);
+      return Buffer.concat(temp);
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number} startIndex - positive or negative starting index for segment
+   * @param {Boolean} isKeyframe - filter starting segment to contain keyframe
+   * - Returns the Mp4 segments concatenated as a single &lt;b>Buffer&lt;/b>.
+   * &lt;br/>
+   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns &lt;b>Null&lt;/b> if no segment found when filtered with startIndex and isKeyframe.
+   * @returns {Buffer|null}
+   */
+  getSegmentList(startIndex = -1, isKeyframe = true) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [];
+      for (let i = segmentIndex; i &lt; this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
       return Buffer.concat(temp);
     }
     return null;
@@ -300,8 +323,29 @@ class Mp4Frag extends Transform {
    */
   get buffer() {
     if (this._initialization &amp;&amp; this._segments &amp;&amp; this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+      const temp = this._segments.map(({ segment }) => segment);
       return Buffer.concat([this._initialization, ...temp]);
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number} startIndex - positive or negative starting index for segment
+   * @param {Boolean} isKeyframe - filter starting segment to contain keyframe
+   * - Returns the [Mp4Frag.initialization]{@link Mp4Frag#initialization} and [Mp4Frag.segmentList]{@link Mp4Frag#segmentList} concatenated as a single &lt;b>Buffer&lt;/b>.
+   * &lt;br/>
+   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns &lt;b>Null&lt;/b> if no segment found when filtered with startIndex and isKeyframe.
+   * @returns {Buffer|null}
+   */
+  getBuffer(startIndex = -1, isKeyframe = true) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [this._initialization];
+      for (let i = segmentIndex; i &lt; this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
+      return Buffer.concat(temp);
     }
     return null;
   }
@@ -318,7 +362,7 @@ class Mp4Frag extends Transform {
     if (sequence >= 0 &amp;&amp; this._segments &amp;&amp; this._segments.length > 0) {
       for (let i = 0; i &lt; this._segments.length; i++) {
         if (this._segments[i].sequence === sequence) {
-          return this._segments[i].buffer;
+          return this._segments[i].segment;
         }
       }
     }
@@ -329,7 +373,7 @@ class Mp4Frag extends Transform {
    * @param {Number|String} sequence
    * - Returns the Mp4 segment that corresponds to the numbered sequence as an &lt;b>Object&lt;/b>.
    * &lt;br/>
-   * - &lt;b>&lt;code>{buffer, sequence, duration, timestamp}&lt;/code>&lt;/b>
+   * - &lt;b>&lt;code>{segment, sequence, duration, timestamp}&lt;/code>&lt;/b>
    * &lt;br/>
    * - Returns &lt;b>Null&lt;/b> if there is no segment that corresponds to sequence number.
    * @returns {Object|null}
@@ -344,6 +388,77 @@ class Mp4Frag extends Transform {
       }
     }
     return null;
+  }
+
+  /**
+   * Clear cached values
+   */
+  resetCache() {
+    /**
+     * Fires when resetCache() is called.
+     * @event Mp4Frag#reset
+     * @type {Event}
+     */
+    this.emit('reset');
+    this._parseChunk = this._findFtyp;
+    this._sequence = -1;
+    if (this._segments) {
+      this._segments = [];
+    }
+    delete this._mime;
+    delete this._videoCodec;
+    delete this._audioCodec;
+    delete this._initialization;
+    delete this._segment;
+    delete this._timestamp;
+    delete this._duration;
+    delete this._moof;
+    delete this._mdatBuffer;
+    delete this._moofLength;
+    delete this._mdatLength;
+    delete this._mdatBufferSize;
+    delete this._ftyp;
+    delete this._ftypLength;
+    delete this._m3u8;
+  }
+
+  /**
+   * Get index of segment filtered by startIndex and isKeyframe.
+   * @private
+   */
+  _getSegmentIndex(startIndex, isKeyframe) {
+    if (!Number.isInteger(startIndex)) {
+      startIndex = -1;
+    }
+    let segmentIndex = -1;
+    if (this._segments &amp;&amp; this._segments.length > 0) {
+      if (startIndex &lt; 0) {
+        for (let i = this._segments.length + startIndex; i >= 0; --i) {
+          if (isKeyframe === true) {
+            if (this._segments[i].keyframe > -1) {
+              segmentIndex = i;
+              break;
+            }
+          } else {
+            segmentIndex = i;
+            break;
+          }
+        }
+      } else {
+        for (let i = startIndex; i &lt; this._segments.length; ++i) {
+          if (isKeyframe === true) {
+            if (this._segments[i].keyframe > -1) {
+              segmentIndex = i;
+              break;
+            }
+          } else {
+            segmentIndex = i;
+            break;
+          }
+        }
+      }
+    }
+    return segmentIndex;
   }
 
   /**
@@ -533,6 +648,33 @@ class Mp4Frag extends Transform {
   }
 
   /**
+   * Set keyframe index.
+   * @private
+   */
+  _setKeyframe() {
+    // derived from https://github.com/video-dev/hls.js/blob/729a36d409cc78cc391b17a0680eaf743f9213fb/tools/mp4-inspect.js#L48
+    for (let i = this._moofLength + 8, nalIndex = 0, nalLength; i &lt; this._mdatLength; i += nalLength, ++nalIndex) {
+      nalLength = this._segment.readUInt32BE(i);
+      i += 4;
+      if ((this._segment[i] &amp; 0x1f) === 0x05) {
+        this._keyframe = nalIndex;
+        return;
+      }
+    }
+    this._keyframe = -1;
+  }
+
+  /**
+   * Set duration and timestamp.
+   * @private
+   */
+  _setDurTime() {
+    const currentTime = Date.now();
+    this._duration = (currentTime - this._timestamp) / 1000;
+    this._timestamp = currentTime;
+  }
+
+  /**
    * Process current segment.
    * @fires Mp4Frag#segment
    * @param chunk {Buffer}
@@ -540,16 +682,16 @@ class Mp4Frag extends Transform {
    */
   _setSegment(chunk) {
     this._segment = chunk;
-    const currentTime = Date.now();
-    this._duration = (currentTime - this._timestamp) / 1000;
-    this._timestamp = currentTime;
+    this._setKeyframe();
+    this._setDurTime();
     this._sequence++;
     if (this._segments) {
       this._segments.push({
-        buffer: this._segment,
+        segment: this._segment,
         sequence: this._sequence,
         duration: this._duration,
-        timestamp: this._timestamp
+        timestamp: this._timestamp,
+        keyframe: this._keyframe
       });
       while (this._segments.length > this._segmentCount) {
         this._segments.shift();
@@ -664,35 +806,35 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * Clear cached values
+   * @param {*|Number|String} number
+   * @param {Number} def
+   * @param {Number} min
+   * @param {Number} max
+   * @return {Number}
+   * @private
    */
-  resetCache() {
-    /**
-     * Fires when resetCache() is called.
-     * @event Mp4Frag#reset
-     * @type {Event}
-     */
-    this.emit('reset');
-    this._parseChunk = this._findFtyp;
-    this._sequence = -1;
-    if (this._segments) {
-      this._segments = [];
+  static _validateNumber(number, def, min, max) {
+    number = Number.parseInt(number);
+    if (isNaN(number)) {
+      return def;
     }
-    delete this._mime;
-    delete this._videoCodec;
-    delete this._audioCodec;
-    delete this._initialization;
-    delete this._segment;
-    delete this._timestamp;
-    delete this._duration;
-    delete this._moof;
-    delete this._mdatBuffer;
-    delete this._moofLength;
-    delete this._mdatLength;
-    delete this._mdatBufferSize;
-    delete this._ftyp;
-    delete this._ftypLength;
-    delete this._m3u8;
+    if (number &lt; min) {
+      return min;
+    }
+    if (number > max) {
+      return max;
+    }
+    return number;
+  }
+
+  /**
+   * @param {*|Boolean} bool
+   * @param {Boolean} def
+   * @return {Boolean}
+   * @private
+   */
+  static _validateBoolean(bool, def) {
+    return typeof bool === 'boolean' ? bool : def;
   }
 }
 
@@ -713,7 +855,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Mar 02 2021 11:21:39 GMT-0600 (Central Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Sat Mar 27 2021 12:27:42 GMT-0500 (Central Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
