@@ -392,11 +392,11 @@ class Mp4Frag extends Transform {
    * @private
    */
   _getSegmentIndex(startIndex, isKeyframe) {
-    if (!Number.isInteger(startIndex)) {
-      startIndex = -1;
-    }
     let segmentIndex = -1;
     if (this._segments && this._segments.length > 0) {
+      if (!Number.isInteger(startIndex)) {
+        startIndex = -1;
+      }
       if (startIndex < 0) {
         for (let i = this._segments.length + startIndex; i >= 0; --i) {
           if (isKeyframe === true) {
