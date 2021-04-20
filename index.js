@@ -286,7 +286,7 @@ class Mp4Frag extends Transform {
    * @returns {Buffer|null}
    */
   get buffer() {
-    if (this._initialization && this._segments && this._segments.length > 0) {
+    if (this._segments && this._segments.length > 0) {
       const temp = this._segments.map(({ segment }) => segment);
       return Buffer.concat([this._initialization, ...temp]);
     }
