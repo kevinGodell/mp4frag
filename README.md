@@ -1,7 +1,9 @@
 # mp4frag
+
 ###### [![Build Status](https://travis-ci.org/kevinGodell/mp4frag.svg?branch=master)](https://travis-ci.org/kevinGodell/mp4frag) [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
+
 Parser that works with ffmpeg to read piped data and fragment mp4 into an initialization segment and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist.
-***You must use the correct output flags with ffmpeg to create a compatible fragmented mp4 format similar to the following real world examples:***
+***You must use the correct output args with ffmpeg to create a compatible fragmented mp4 format similar to the following real world examples:***
 * `ffmpeg -loglevel quiet -rtsp_transport tcp -i rtsp://192.168.1.21:554/user=admin_password=pass_channel=0_stream=1.sdp?real_stream -reset_timestamps 1 -an -c:v copy -f mp4 -movflags +frag_every_frame+empty_moov+default_base_moof -min_frag_duration 500000 pipe:1`
 * `ffmpeg -loglevel quiet -rtsp_transport tcp -i rtsp://192.168.1.18:554/user=admin&password=pass&channel=1&stream=1.sdp -reset_timestamps 1 -an -c:v copy -f mp4 -movflags +frag_keyframe+empty_moov+default_base_moof pipe:1`
 
@@ -14,34 +16,50 @@ Parser that works with ffmpeg to read piped data and fragment mp4 into an initia
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
 
 # Changes v0.3.0 => v0.4.0
-### Convenience methods added for accessing internal buffer
-see [docs](https://kevingodell.github.io/mp4frag/) for methods
 
-# Breaking Changes v0.2.0 => v0.3.0
-### Constructor options have changed
+### SegmentObject changed
+* keyframe property added to segmentObject `{ segment, sequence, duration, timestamp, keyframe }`
+* segment contains a keyframe if `keyframe >= 0`
+
+### Convenience methods added
+* [getBuffer](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getBuffer)
+* [getSegment](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegment)
+* [getSegmentList](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentList)
+* [getSegmentObject](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObject)
+* [getSegmentObjectList](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObjectList)
+
+# Changes v0.2.0 => v0.3.0
+
+### Constructor options changed ***---> BREAKING  <---***
+
 * `hlsBase` => `hlsPlaylistBase` _string_, accepts `_`, `a-z`, and `A-Z`
 * `hlsSize` => `hlsPlaylistSize` _integer_, ranges from `2` to `20`, defaults to `4`
 * `hlsInit` => `hlsPlaylistInit` _boolean_, defaults to `true`
 * `bufferListSize` => `segmentCount` _integer_, ranges from `2` to `30`, defaults to `2` 
-### Segment event has changed
+
+### Segment event changed ***---> BREAKING  <---***
+
 ```js
 mp4frag.on('segment', data => {
   console.log(data);
 });
 ```
-* Previously, data was a Buffer containing a single segment.
-* Currently, data is an object structured as `{ segment, sequence, duration, timestamp }`
+* previously, data was a Buffer.
+* currently, data is a segmentObject structured as `{ segment, sequence, duration, timestamp }`
 
 # Options for a new instance of Mp4Frag
 
 #### segmentCount: integer (2 - 30), *setting this value will store specified number of media segments in the buffer*
+
 * will be ignored if setting `hlsPlaylistBase`
 ```javascript
 const mp4frag = new Mp4Frag({segmentCount: 3});
 ```
 
 #### hlsPlaylistBase: string (`_`, `a-z`, and `A-Z`), *setting this will generate a live fmp4 HLS m3u8 playlist*
+
 #### hlsPlaylistSize: integer (2 - 20), *setting this will determine the number of segments in the fmp4 HLS m3u8 playlist*
+
 ```javascript
 const mp4frag = new Mp4Frag({hlsPlaylistSize: 4, hlsPlaylistBase: 'my_String'});
 ```
@@ -60,15 +78,16 @@ const mp4frag = new Mp4Frag({hlsPlaylistSize: 3, hlsPlaylistBase: 'back_yard'});
 const ffmpeg = spawn(
     'ffmpeg',
     ['-loglevel', 'quiet', '-probesize', '64', '-analyzeduration', '100000', '-reorder_queue_size', '5', '-rtsp_transport', 'tcp', '-i', 'rtsp://216.4.116.29:554/axis-media/media.3gp', '-an', '-c:v', 'copy', '-f', 'mp4', '-movflags', '+frag_keyframe+empty_moov+default_base_moof', '-metadata', 'title="ip 216.4.116.29"', '-reset_timestamps', '1', 'pipe:1'],
-    {stdio: ['ignore', 'pipe', 'inherit']}
+    { stdio: ['ignore', 'pipe', 'inherit'] }
 );
 
 ffmpeg.stdio[1].pipe(mp4frag);
-   
 ```
   * **m3u8 playlist will now be available via `mp4frag.m3u8` and can be served to a client browser via express**
   * **segments in playlist can be accessed by sequence number via `mp4frag.getSegment(6)`, with `6` being the current sequence number**
+
 #### Generated m3u8 playlist will look like the following example pulled from my live feed
+
 ```
 #EXTM3U
 #EXT-X-VERSION:7
@@ -83,14 +102,16 @@ back_yard7.m4s
 #EXTINF:4.269000,
 back_yard8.m4s
 ```
+
 #### Setting up some server routes to respond to http requests for playing live HLS feed
+
 ```javascript
 app.get('/back_yard.m3u8', (req, res) => {
     if (mp4frag.m3u8) {
         res.writeHead(200, {'Content-Type': 'application/vnd.apple.mpegurl'});
         res.end(mp4frag.m3u8);
     } else {
-        res.sendStatus(503);//todo maybe send 400
+        res.sendStatus(503);
     }
 });
 
@@ -113,6 +134,7 @@ app.get('/back_yard:id.m4s', (req, res) => {
     }
 });
 ```
+
 ## Example 2: *Create a buffer of past video to store for later recording*
 
 ```javascript
@@ -127,11 +149,12 @@ const mp4frag = new Mp4Frag({segmentCount: 3});
 const ffmpeg = spawn(
     'ffmpeg',
     ['-loglevel', 'quiet', '-probesize', '64', '-analyzeduration', '100000', '-reorder_queue_size', '5', '-rtsp_transport', 'tcp', '-i', 'rtsp://131.95.3.162:554/axis-media/media.3gp', '-an', '-c:v', 'copy', '-f', 'mp4', '-movflags', '+frag_keyframe+empty_moov+default_base_moof', '-metadata', 'title="ip 131.95.3.162"', '-reset_timestamps', '1', 'pipe:1'],
-    {stdio: ['ignore', 'pipe', 'inherit']}
+    { stdio: ['ignore', 'pipe', 'inherit'] }
 );
 
 ffmpeg.stdio[1].pipe(mp4frag);
 ```
+
 ##### Moments later, some triggering event occurs such as motion detection, and we need to record buffered video from before the event occurred:
 
 ```javascript
