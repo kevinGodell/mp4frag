@@ -13,6 +13,10 @@ Parser that works with ffmpeg to read piped data and fragment mp4 into an initia
 * [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-streamer)
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
 
+# Changes v0.3.0 => v0.4.0
+### Convenience methods added for accessing internal buffer
+see [docs](https://kevingodell.github.io/mp4frag/) for methods
+
 # Breaking Changes v0.2.0 => v0.3.0
 ### Constructor options have changed
 * `hlsBase` => `hlsPlaylistBase` _string_, accepts `_`, `a-z`, and `A-Z`
