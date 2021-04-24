@@ -105,27 +105,27 @@ const params = [
   'title=test mp4',
   //'-frag_duration', '1000000',//make ffmpeg create segments that are 1 second duration
   //'-min_frag_duration', '1000000',//make ffmpeg create segments that are 1 second duration
-  'pipe:1'
+  'pipe:1',
 ];
 
 const mp4frag = new Mp4Frag();
 
-mp4frag.once('initialized', data => {
+mp4frag.once('initialized', (data) => {
   assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
-mp4frag.on('segment', data => {
+mp4frag.on('segment', (data) => {
   counter++;
 });
 
-mp4frag.once('error', data => {
+mp4frag.once('error', (data) => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', error => {
+ffmpeg.once('error', (error) => {
   console.log('ffmpeg error', error);
 });
 
@@ -137,7 +137,7 @@ ffmpeg.once('exit', (code, signal) => {
 
 //ffmpeg.stdio[1].pipe(mp4frag);
 
-ffmpeg.stdio[1].on('data', data => {
+ffmpeg.stdio[1].on('data', (data) => {
   //if (data.length < 8192) {
   console.log('length', data.length, new Date().toISOString());
   //}

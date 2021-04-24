@@ -44,12 +44,12 @@ const params = [
   'mp4',
   '-movflags',
   '+isml+frag_keyframe',
-  'pipe.mp4'
+  'pipe.mp4',
 ];
 
 const mp4frag = new Mp4Frag({ hlsPlaylistBase: 'test_Name' });
 
-mp4frag.once('initialized', data => {
+mp4frag.once('initialized', (data) => {
   console.log('init');
   assert(
     mp4frag.m3u8 ===
@@ -58,19 +58,19 @@ mp4frag.once('initialized', data => {
   );
 });
 
-mp4frag.on('segment', data => {
+mp4frag.on('segment', (data) => {
   console.log('seg');
   counter++;
 });
 
-mp4frag.once('error', data => {
+mp4frag.once('error', (data) => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn('avconv', params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', error => {
+ffmpeg.once('error', (error) => {
   console.log('ffmpeg error', error);
 });
 

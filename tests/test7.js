@@ -61,30 +61,30 @@ const params = [
   '30000000', //make ffmpeg create segments that are 30 seconds duration
   '-min_frag_duration',
   '30000000', //make ffmpeg create segments that are 30 seconds duration
-  'pipe:1'
+  'pipe:1',
 ];
 
 const mp4frag = new Mp4Frag();
 
-mp4frag.once('initialized', data => {
+mp4frag.once('initialized', (data) => {
   const writeStream = fs.createWriteStream(`${__dirname}/out/init.mp4`);
   writeStream.end(data.initialization);
 });
 
-mp4frag.on('segment', data => {
+mp4frag.on('segment', (data) => {
   const writeStream = fs.createWriteStream(`${__dirname}/out/seg-${counter}.m4s`);
   writeStream.end(data.buffer);
   counter++;
 });
 
-mp4frag.once('error', data => {
+mp4frag.once('error', (data) => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', error => {
+ffmpeg.once('error', (error) => {
   console.log('ffmpeg error', error);
 });
 

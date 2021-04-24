@@ -140,7 +140,7 @@ class Mp4Frag extends Transform {
       sequence: this.sequence,
       duration: this.duration,
       timestamp: this.timestamp,
-      keyframe: this.keyframe
+      keyframe: this.keyframe,
     };
   }
 
@@ -660,7 +660,7 @@ class Mp4Frag extends Transform {
         sequence: this._sequence,
         duration: this._duration,
         timestamp: this._timestamp,
-        keyframe: this._keyframe
+        keyframe: this._keyframe,
       });
       while (this._segments.length > this._segmentCount) {
         this._segments.shift();

@@ -65,7 +65,7 @@ const params = [
   //'-strftime', 1,
   //'%Y-%m-%dT%H-%M-%S.mp4'
   //'capture=%03d.mp4'
-  'pipe:1'
+  'pipe:1',
 
   //-f segment -segment_time 300 -segment_format mp4 "capture-%03d.mp4"
 
@@ -90,7 +90,7 @@ const params = [
 
 const mp4frag = new Mp4Frag({ hlsPlaylistBase: 'test_Name', hlsPlaylistInit: true });
 
-mp4frag.once('initialized', data => {
+mp4frag.once('initialized', (data) => {
   console.log('init');
   assert(
     mp4frag.m3u8 ===
@@ -99,19 +99,19 @@ mp4frag.once('initialized', data => {
   );
 });
 
-mp4frag.on('segment', data => {
+mp4frag.on('segment', (data) => {
   console.log('seg');
   counter++;
 });
 
-mp4frag.once('error', data => {
+mp4frag.once('error', (data) => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', error => {
+ffmpeg.once('error', (error) => {
   console.log('ffmpeg error', error);
 });
 
@@ -129,7 +129,7 @@ const wri = new Writable({
     console.log('length', chunk.length, new Date().toISOString());
     //console.log(chunk.length);
     callback();
-  }
+  },
 });
 
 //ffmpeg.stdio[1].pipe(wri);
