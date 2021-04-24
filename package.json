@@ -29,7 +29,8 @@
     "m3u8",
     "media",
     "source",
-    "extension"
+    "extension",
+    "cctv"
   ],
   "author": "Kevin Godell <kevin.godell@gmail.com>",
   "license": "MIT",
