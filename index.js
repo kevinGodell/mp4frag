@@ -18,14 +18,18 @@ const _SEG_MIN = 2; // segment list size minimum
 const _SEG_MAX = 30; // segment list size maximum
 
 /**
- * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
- * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
- * Can also be used for storing past segments of the mp4 video in a buffer for later access.
- * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov+default_base_moof</i></b> to generate a fmp4
- * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
+ * @fileOverview
+ * <ul>
+ * <li>Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.</li>
+ * <li>Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.</li>
+ * <li>Can be used for storing past segments of the mp4 video in a buffer for later access.</li>
+ * <li>Must use the following ffmpeg args <b><i>-movflags +frag_keyframe+empty_moov+default_base_moof</i></b> to generate
+ * a valid fmp4 with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...</li>
+ * </ul>
  * @requires stream.Transform
  */
 class Mp4Frag extends Transform {
+  // noinspection DuplicatedCode
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
@@ -39,8 +43,8 @@ class Mp4Frag extends Transform {
    */
   constructor(options) {
     super(options);
-    if (options) {
-      if (options.hasOwnProperty('hlsPlaylistBase')) {
+    if (typeof options === 'object') {
+      if (typeof options.hlsPlaylistBase !== 'undefined') {
         if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
           throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
         }
@@ -50,7 +54,7 @@ class Mp4Frag extends Transform {
         this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, 0, 0, _HLS_EXTRA_MAX);
         this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
         this._segments = [];
-      } else if (options.hasOwnProperty('segmentCount')) {
+      } else if (typeof options.segmentCount !== 'undefined') {
         this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_DEF, _SEG_MIN, _SEG_MAX);
         this._segments = [];
       }
@@ -370,21 +374,21 @@ class Mp4Frag extends Transform {
     if (this._segments) {
       this._segments = [];
     }
-    delete this._mime;
-    delete this._videoCodec;
-    delete this._audioCodec;
-    delete this._initialization;
-    delete this._segment;
-    delete this._timestamp;
-    delete this._duration;
-    delete this._moof;
-    delete this._mdatBuffer;
-    delete this._moofLength;
-    delete this._mdatLength;
-    delete this._mdatBufferSize;
-    delete this._ftyp;
-    delete this._ftypLength;
-    delete this._m3u8;
+    this._mime = undefined;
+    this._videoCodec = undefined;
+    this._audioCodec = undefined;
+    this._initialization = undefined;
+    this._segment = undefined;
+    this._timestamp = undefined;
+    this._duration = undefined;
+    this._moof = undefined;
+    this._mdatBuffer = undefined;
+    this._moofLength = undefined;
+    this._mdatLength = undefined;
+    this._mdatBufferSize = undefined;
+    this._ftyp = undefined;
+    this._ftypLength = undefined;
+    this._m3u8 = undefined;
   }
 
   /**
@@ -465,14 +469,14 @@ class Mp4Frag extends Transform {
     const moovLength = chunk.readUInt32BE(0, true);
     if (moovLength < chunkLength) {
       this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
-      delete this._ftyp;
-      delete this._ftypLength;
+      this._ftyp = undefined;
+      this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
       this._parseChunk(chunk.slice(moovLength));
     } else if (moovLength === chunkLength) {
       this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
-      delete this._ftyp;
-      delete this._ftypLength;
+      this._ftyp = undefined;
+      this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
     } else {
       //probably should not arrive here here because moov is typically < 800 bytes
@@ -542,8 +546,8 @@ class Mp4Frag extends Transform {
       //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
       const index = chunk.indexOf(_MOOF);
       if (index > 3 && chunk.length > index + 3) {
-        delete this._moofHunts;
-        delete this._moofHuntsLimit;
+        this._moofHunts = undefined;
+        this._moofHuntsLimit = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(index - 4));
       }
@@ -565,14 +569,14 @@ class Mp4Frag extends Transform {
       if (this._moofLength === this._moofBufferSize) {
         //todo verify this works
         this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
-        delete this._moofBuffer;
-        delete this._moofBufferSize;
+        this._moofBuffer = undefined;
+        this._moofBufferSize = undefined;
         this._parseChunk = this._findMdat;
       } else if (this._moofLength < this._moofBufferSize) {
         this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
         const sliceIndex = chunkLength - (this._moofBufferSize - this._moofLength);
-        delete this._moofBuffer;
-        delete this._moofBufferSize;
+        this._moofBuffer = undefined;
+        this._moofBufferSize = undefined;
         this._parseChunk = this._findMdat;
         this._parseChunk(chunk.slice(sliceIndex));
       }
@@ -708,20 +712,20 @@ class Mp4Frag extends Transform {
       this._mdatBufferSize += chunkLength;
       if (this._mdatLength === this._mdatBufferSize) {
         this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
-        delete this._moof;
-        delete this._mdatBuffer;
-        delete this._mdatBufferSize;
-        delete this._mdatLength;
-        delete this._moofLength;
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
         this._parseChunk = this._findMoof;
       } else if (this._mdatLength < this._mdatBufferSize) {
         this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
         const sliceIndex = chunkLength - (this._mdatBufferSize - this._mdatLength);
-        delete this._moof;
-        delete this._mdatBuffer;
-        delete this._mdatBufferSize;
-        delete this._mdatLength;
-        delete this._moofLength;
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(sliceIndex));
       }
@@ -737,16 +741,16 @@ class Mp4Frag extends Transform {
         this._mdatBufferSize = chunkLength;
       } else if (this._mdatLength === chunkLength) {
         this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + chunkLength));
-        delete this._moof;
-        delete this._moofLength;
-        delete this._mdatLength;
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
         this._parseChunk = this._findMoof;
       } else {
         this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + this._mdatLength));
         const sliceIndex = this._mdatLength;
-        delete this._moof;
-        delete this._moofLength;
-        delete this._mdatLength;
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(sliceIndex));
       }
