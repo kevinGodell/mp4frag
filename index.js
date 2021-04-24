@@ -18,88 +18,50 @@ const _SEG_MIN = 2; // segment list size minimum
 const _SEG_MAX = 30; // segment list size maximum
 
 /**
- * @fileOverview Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.
- * Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.
- * Can also be used for storing past segments of the mp4 video in a buffer for later access.
- * Must use the following ffmpeg flags <b><i>-movflags +frag_keyframe+empty_moov+default_base_moof</i></b> to generate a fmp4
- * with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...
+ * @fileOverview
+ * <ul>
+ * <li>Creates a stream transform for piping a fmp4 (fragmented mp4) from ffmpeg.</li>
+ * <li>Can be used to generate a fmp4 m3u8 HLS playlist and compatible file fragments.</li>
+ * <li>Can be used for storing past segments of the mp4 video in a buffer for later access.</li>
+ * <li>Must use the following ffmpeg args <b><i>-movflags +frag_keyframe+empty_moov+default_base_moof</i></b> to generate
+ * a valid fmp4 with a compatible file structure : ftyp+moov -> moof+mdat -> moof+mdat -> moof+mdat ...</li>
+ * </ul>
  * @requires stream.Transform
  */
 class Mp4Frag extends Transform {
+  // noinspection DuplicatedCode
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
    * @param {String} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
    * @param {Number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
    * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
-   * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after init segment is created and before media segments are created.
+   * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
    * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
    * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
     super(options);
-    if (options) {
-      if (options.hasOwnProperty('hlsPlaylistBase')) {
+    if (typeof options === 'object') {
+      if (typeof options.hlsPlaylistBase !== 'undefined') {
         if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
           throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
         }
-
         this._hlsPlaylistBase = options.hlsPlaylistBase;
-
         this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, true);
-
         this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
-
         this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, 0, 0, _HLS_EXTRA_MAX);
-
         this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
-
         this._segments = [];
-      } else if (options.hasOwnProperty('segmentCount')) {
+      } else if (typeof options.segmentCount !== 'undefined') {
         this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_DEF, _SEG_MIN, _SEG_MAX);
-
         this._segments = [];
       }
     }
-
     this._sequence = -1;
-
     this._parseChunk = this._findFtyp;
-
     return this;
-  }
-
-  /**
-   * @param {*|Number|String} number
-   * @param {Number} def
-   * @param {Number} min
-   * @param {Number} max
-   * @return {Number}
-   * @private
-   */
-  static _validateNumber(number, def, min, max) {
-    number = Number.parseInt(number);
-    if (isNaN(number)) {
-      return def;
-    }
-    if (number < min) {
-      return min;
-    }
-    if (number > max) {
-      return max;
-    }
-    return number;
-  }
-
-  /**
-   * @param {*|Boolean} bool
-   * @param {Boolean} def
-   * @return {Boolean}
-   * @private
-   */
-  static _validateBoolean(bool, def) {
-    return typeof bool === 'boolean' ? bool : def;
   }
 
   /**
@@ -167,9 +129,9 @@ class Mp4Frag extends Transform {
    * @property {Object} segmentObject
    * - Returns the latest Mp4 segment as an <b>Object</b>.
    * <br/>
-   *  - <b><code>{segment, sequence, duration, timestamp}</code></b>
+   *  - <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
    * <br/>
-   * - Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1}</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1, keyframe: -1}</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Object}
    */
   get segmentObject() {
@@ -177,7 +139,8 @@ class Mp4Frag extends Transform {
       segment: this.segment,
       sequence: this.sequence,
       duration: this.duration,
-      timestamp: this.timestamp
+      timestamp: this.timestamp,
+      keyframe: this.keyframe
     };
   }
 
@@ -231,10 +194,22 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Number} keyframe
+   * - Returns the nal keyframe index of the latest Mp4 segment as an <b>Integer</b>.
+   * <br/>
+   * - Returns <b>-1</b> if segment contains no keyframe nal.
+   * @returns {Number}
+   */
+  get keyframe() {
+    return Number.isInteger(this._keyframe) ? this._keyframe : -1;
+  }
+
+  /**
+   * @readonly
    * @property {Array|null} segmentObjectList
    * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
    * <br/>
-   * - <b><code>[{buffer, sequence, duration, timestamp},...]</code></b>
+   * - <b><code>[{segment, sequence, duration, timestamp, keyframe},...]</code></b>
    * <br/>
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Array|null}
@@ -242,6 +217,28 @@ class Mp4Frag extends Transform {
   get segmentObjectList() {
     if (this._segments && this._segments.length > 0) {
       return this._segments;
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
+   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @returns {Array|null}
+   * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
+   * <br/>
+   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * <br/>
+   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
+   */
+  getSegmentObjectList(startIndex, isKeyframe) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [];
+      for (let i = segmentIndex; i < this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
+      return temp;
     }
     return null;
   }
@@ -256,7 +253,29 @@ class Mp4Frag extends Transform {
    */
   get segmentList() {
     if (this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+      const temp = this._segments.map(({ segment }) => segment);
+      return Buffer.concat(temp);
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
+   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @returns {Buffer|null}
+   * - Returns the Mp4 segments concatenated as a single <b>Buffer</b>.
+   * <br/>
+   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * <br/>
+   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
+   */
+  getSegmentList(startIndex = -1, isKeyframe = true) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [];
+      for (let i = segmentIndex; i < this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
       return Buffer.concat(temp);
     }
     return null;
@@ -265,32 +284,54 @@ class Mp4Frag extends Transform {
   /**
    * @readonly
    * @property {Buffer|null} buffer
-   * - Returns the [Mp4Frag.initialization]{@link Mp4Frag#initialization} and [Mp4Frag.segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
+   * - Returns the [initialization]{@link Mp4Frag#initialization} and [segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Buffer|null}
    */
   get buffer() {
-    if (this._initialization && this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ buffer }) => buffer);
+    if (this._segments && this._segments.length > 0) {
+      const temp = this._segments.map(({ segment }) => segment);
       return Buffer.concat([this._initialization, ...temp]);
     }
     return null;
   }
 
   /**
-   * @param {Number|String} sequence
+   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
+   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @returns {Buffer|null}
+   * - Returns the [initialization]{@link Mp4Frag#initialization} and [segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
+   * <br/>
+   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * <br/>
+   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
+   */
+  getBuffer(startIndex = -1, isKeyframe = true) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+    if (segmentIndex >= 0) {
+      const temp = [this._initialization];
+      for (let i = segmentIndex; i < this._segments.length; ++i) {
+        temp.push(this._segments[i].segment);
+      }
+      return Buffer.concat(temp);
+    }
+    return null;
+  }
+
+  /**
+   * @param {Number|String} sequence - sequence number
+   * @returns {Buffer|null}
    * - Returns the Mp4 segment that corresponds to the numbered sequence as a <b>Buffer</b>.
    * <br/>
    * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
-   * @returns {Buffer|null}
    */
   getSegment(sequence) {
     sequence = Number.parseInt(sequence);
     if (sequence >= 0 && this._segments && this._segments.length > 0) {
       for (let i = 0; i < this._segments.length; i++) {
         if (this._segments[i].sequence === sequence) {
-          return this._segments[i].buffer;
+          return this._segments[i].segment;
         }
       }
     }
@@ -298,13 +339,13 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * @param {Number|String} sequence
+   * @param {Number|String} sequence - sequence number
+   * @returns {Object|null}
    * - Returns the Mp4 segment that corresponds to the numbered sequence as an <b>Object</b>.
    * <br/>
-   * - <b><code>{buffer, sequence, duration, timestamp}</code></b>
+   * - <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
    * <br/>
    * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
-   * @returns {Object|null}
    */
   getSegmentObject(sequence) {
     sequence = Number.parseInt(sequence);
@@ -316,6 +357,77 @@ class Mp4Frag extends Transform {
       }
     }
     return null;
+  }
+
+  /**
+   * Clear cached values
+   */
+  resetCache() {
+    /**
+     * Fires when resetCache() is called.
+     * @event Mp4Frag#reset
+     * @type {Event}
+     */
+    this.emit('reset');
+    this._parseChunk = this._findFtyp;
+    this._sequence = -1;
+    if (this._segments) {
+      this._segments = [];
+    }
+    this._mime = undefined;
+    this._videoCodec = undefined;
+    this._audioCodec = undefined;
+    this._initialization = undefined;
+    this._segment = undefined;
+    this._timestamp = undefined;
+    this._duration = undefined;
+    this._moof = undefined;
+    this._mdatBuffer = undefined;
+    this._moofLength = undefined;
+    this._mdatLength = undefined;
+    this._mdatBufferSize = undefined;
+    this._ftyp = undefined;
+    this._ftypLength = undefined;
+    this._m3u8 = undefined;
+  }
+
+  /**
+   * Get index of segment filtered by startIndex and isKeyframe.
+   * @private
+   */
+  _getSegmentIndex(startIndex, isKeyframe) {
+    let segmentIndex = -1;
+    if (this._segments && this._segments.length > 0) {
+      if (!Number.isInteger(startIndex)) {
+        startIndex = -1;
+      }
+      if (startIndex < 0) {
+        for (let i = this._segments.length + startIndex; i >= 0; --i) {
+          if (isKeyframe === true) {
+            if (this._segments[i].keyframe > -1) {
+              segmentIndex = i;
+              break;
+            }
+          } else {
+            segmentIndex = i;
+            break;
+          }
+        }
+      } else {
+        for (let i = startIndex; i < this._segments.length; ++i) {
+          if (isKeyframe === true) {
+            if (this._segments[i].keyframe > -1) {
+              segmentIndex = i;
+              break;
+            }
+          } else {
+            segmentIndex = i;
+            break;
+          }
+        }
+      }
+    }
+    return segmentIndex;
   }
 
   /**
@@ -357,14 +469,14 @@ class Mp4Frag extends Transform {
     const moovLength = chunk.readUInt32BE(0, true);
     if (moovLength < chunkLength) {
       this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
-      delete this._ftyp;
-      delete this._ftypLength;
+      this._ftyp = undefined;
+      this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
       this._parseChunk(chunk.slice(moovLength));
     } else if (moovLength === chunkLength) {
       this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
-      delete this._ftyp;
-      delete this._ftypLength;
+      this._ftyp = undefined;
+      this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
     } else {
       //probably should not arrive here here because moov is typically < 800 bytes
@@ -413,7 +525,7 @@ class Mp4Frag extends Transform {
       this._m3u8 = m3u8;
     }
     /**
-     * Fires when the init fragment of the Mp4 is parsed from the piped data.
+     * Fires when the [initialization]{@link Mp4Frag#initialization} of the Mp4 is parsed from the piped data.
      * @event Mp4Frag#initialized
      * @type {Event}
      * @property {Object} Object
@@ -434,8 +546,8 @@ class Mp4Frag extends Transform {
       //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
       const index = chunk.indexOf(_MOOF);
       if (index > 3 && chunk.length > index + 3) {
-        delete this._moofHunts;
-        delete this._moofHuntsLimit;
+        this._moofHunts = undefined;
+        this._moofHuntsLimit = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(index - 4));
       }
@@ -457,14 +569,14 @@ class Mp4Frag extends Transform {
       if (this._moofLength === this._moofBufferSize) {
         //todo verify this works
         this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
-        delete this._moofBuffer;
-        delete this._moofBufferSize;
+        this._moofBuffer = undefined;
+        this._moofBufferSize = undefined;
         this._parseChunk = this._findMdat;
       } else if (this._moofLength < this._moofBufferSize) {
         this._moof = Buffer.concat(this._moofBuffer, this._moofLength);
         const sliceIndex = chunkLength - (this._moofBufferSize - this._moofLength);
-        delete this._moofBuffer;
-        delete this._moofBufferSize;
+        this._moofBuffer = undefined;
+        this._moofBufferSize = undefined;
         this._parseChunk = this._findMdat;
         this._parseChunk(chunk.slice(sliceIndex));
       }
@@ -505,6 +617,33 @@ class Mp4Frag extends Transform {
   }
 
   /**
+   * Set keyframe index.
+   * @private
+   */
+  _setKeyframe() {
+    // derived from https://github.com/video-dev/hls.js/blob/729a36d409cc78cc391b17a0680eaf743f9213fb/tools/mp4-inspect.js#L48
+    for (let i = this._moofLength + 8, nalIndex = 0, nalLength; i < this._mdatLength; i += nalLength, ++nalIndex) {
+      nalLength = this._segment.readUInt32BE(i);
+      i += 4;
+      if ((this._segment[i] & 0x1f) === 0x05) {
+        this._keyframe = nalIndex;
+        return;
+      }
+    }
+    this._keyframe = -1;
+  }
+
+  /**
+   * Set duration and timestamp.
+   * @private
+   */
+  _setDurTime() {
+    const currentTime = Date.now();
+    this._duration = (currentTime - this._timestamp) / 1000;
+    this._timestamp = currentTime;
+  }
+
+  /**
    * Process current segment.
    * @fires Mp4Frag#segment
    * @param chunk {Buffer}
@@ -512,16 +651,16 @@ class Mp4Frag extends Transform {
    */
   _setSegment(chunk) {
     this._segment = chunk;
-    const currentTime = Date.now();
-    this._duration = (currentTime - this._timestamp) / 1000;
-    this._timestamp = currentTime;
+    this._setKeyframe();
+    this._setDurTime();
     this._sequence++;
     if (this._segments) {
       this._segments.push({
-        buffer: this._segment,
+        segment: this._segment,
         sequence: this._sequence,
         duration: this._duration,
-        timestamp: this._timestamp
+        timestamp: this._timestamp,
+        keyframe: this._keyframe
       });
       while (this._segments.length > this._segmentCount) {
         this._segments.shift();
@@ -557,6 +696,7 @@ class Mp4Frag extends Transform {
      * @property {Number} Object.sequence - [Mp4Frag.sequence]{@link Mp4Frag#sequence}
      * @property {Number} Object.duration - [Mp4Frag.duration]{@link Mp4Frag#duration}
      * @property {Number} Object.timestamp - [Mp4Frag.timestamp]{@link Mp4Frag#timestamp}
+     * @property {Number} Object.keyframe - [Mp4Frag.keyframe]{@link Mp4Frag#keyframe}
      */
     this.emit('segment', this.segmentObject);
   }
@@ -572,20 +712,20 @@ class Mp4Frag extends Transform {
       this._mdatBufferSize += chunkLength;
       if (this._mdatLength === this._mdatBufferSize) {
         this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
-        delete this._moof;
-        delete this._mdatBuffer;
-        delete this._mdatBufferSize;
-        delete this._mdatLength;
-        delete this._moofLength;
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
         this._parseChunk = this._findMoof;
       } else if (this._mdatLength < this._mdatBufferSize) {
         this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
         const sliceIndex = chunkLength - (this._mdatBufferSize - this._mdatLength);
-        delete this._moof;
-        delete this._mdatBuffer;
-        delete this._mdatBufferSize;
-        delete this._mdatLength;
-        delete this._moofLength;
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(sliceIndex));
       }
@@ -601,16 +741,16 @@ class Mp4Frag extends Transform {
         this._mdatBufferSize = chunkLength;
       } else if (this._mdatLength === chunkLength) {
         this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + chunkLength));
-        delete this._moof;
-        delete this._moofLength;
-        delete this._mdatLength;
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
         this._parseChunk = this._findMoof;
       } else {
         this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + this._mdatLength));
         const sliceIndex = this._mdatLength;
-        delete this._moof;
-        delete this._moofLength;
-        delete this._mdatLength;
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(sliceIndex));
       }
@@ -636,35 +776,35 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * Clear cached values
+   * @param {*|Number|String} number
+   * @param {Number} def
+   * @param {Number} min
+   * @param {Number} max
+   * @return {Number}
+   * @private
    */
-  resetCache() {
-    /**
-     * Fires when resetCache() is called.
-     * @event Mp4Frag#reset
-     * @type {Event}
-     */
-    this.emit('reset');
-    this._parseChunk = this._findFtyp;
-    this._sequence = -1;
-    if (this._segments) {
-      this._segments = [];
+  static _validateNumber(number, def, min, max) {
+    number = Number.parseInt(number);
+    if (isNaN(number)) {
+      return def;
     }
-    delete this._mime;
-    delete this._videoCodec;
-    delete this._audioCodec;
-    delete this._initialization;
-    delete this._segment;
-    delete this._timestamp;
-    delete this._duration;
-    delete this._moof;
-    delete this._mdatBuffer;
-    delete this._moofLength;
-    delete this._mdatLength;
-    delete this._mdatBufferSize;
-    delete this._ftyp;
-    delete this._ftypLength;
-    delete this._m3u8;
+    if (number < min) {
+      return min;
+    }
+    if (number > max) {
+      return max;
+    }
+    return number;
+  }
+
+  /**
+   * @param {*|Boolean} bool
+   * @param {Boolean} def
+   * @return {Boolean}
+   * @private
+   */
+  static _validateBoolean(bool, def) {
+    return typeof bool === 'boolean' ? bool : def;
   }
 }
 
