@@ -224,6 +224,7 @@ class Mp4Frag extends Transform {
   /**
    * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
    * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @param {Number} [count = 1] - stop searching when count is reached
    * @returns {Array|null}
    * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
    * <br/>
@@ -231,8 +232,8 @@ class Mp4Frag extends Transform {
    * <br/>
    * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
    */
-  getSegmentObjectList(startIndex, isKeyframe) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+  getSegmentObjectList(startIndex = -1, isKeyframe = true, count = 1) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
     if (segmentIndex >= 0) {
       const temp = [];
       for (let i = segmentIndex; i < this._segments.length; ++i) {
@@ -262,6 +263,7 @@ class Mp4Frag extends Transform {
   /**
    * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
    * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @param {Number} [count = 1] - stop searching when count is reached
    * @returns {Buffer|null}
    * - Returns the Mp4 segments concatenated as a single <b>Buffer</b>.
    * <br/>
@@ -269,8 +271,8 @@ class Mp4Frag extends Transform {
    * <br/>
    * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
    */
-  getSegmentList(startIndex = -1, isKeyframe = true) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+  getSegmentList(startIndex = -1, isKeyframe = true, count = 1) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
     if (segmentIndex >= 0) {
       const temp = [];
       for (let i = segmentIndex; i < this._segments.length; ++i) {
@@ -300,6 +302,7 @@ class Mp4Frag extends Transform {
   /**
    * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
    * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
+   * @param {Number} [count = 1] - stop searching when count is reached
    * @returns {Buffer|null}
    * - Returns the [initialization]{@link Mp4Frag#initialization} and [segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
    * <br/>
@@ -307,8 +310,8 @@ class Mp4Frag extends Transform {
    * <br/>
    * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
    */
-  getBuffer(startIndex = -1, isKeyframe = true) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe);
+  getBuffer(startIndex = -1, isKeyframe = true, count = 1) {
+    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
     if (segmentIndex >= 0) {
       const temp = [this._initialization];
       for (let i = segmentIndex; i < this._segments.length; ++i) {
@@ -392,37 +395,37 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * Get index of segment filtered by startIndex and isKeyframe.
+   * Get index of segment filtered by startIndex and isKeyframe and count.
    * @private
    */
-  _getSegmentIndex(startIndex, isKeyframe) {
+  _getSegmentIndex(startIndex = -1, isKeyframe = true, count = 1) {
     let segmentIndex = -1;
     if (this._segments && this._segments.length > 0) {
       if (!Number.isInteger(startIndex)) {
         startIndex = -1;
       }
       if (startIndex < 0) {
-        for (let i = this._segments.length + startIndex; i >= 0; --i) {
+        for (let i = this._segments.length + startIndex, c = 0; i >= 0 && c < count; --i) {
           if (isKeyframe === true) {
             if (this._segments[i].keyframe > -1) {
               segmentIndex = i;
-              break;
+              ++c;
             }
           } else {
             segmentIndex = i;
-            break;
+            ++c;
           }
         }
       } else {
-        for (let i = startIndex; i < this._segments.length; ++i) {
+        for (let i = startIndex, c = 0; i < this._segments.length && c < count; ++i) {
           if (isKeyframe === true) {
             if (this._segments[i].keyframe > -1) {
               segmentIndex = i;
-              break;
+              ++c;
             }
           } else {
             segmentIndex = i;
-            break;
+            ++c;
           }
         }
       }
