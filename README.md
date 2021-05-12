@@ -15,6 +15,15 @@ Parser that works with ffmpeg to read piped data and split the fmp4 into initial
 * [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-streamer)
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
 
+# Changes v0.4.0 => v0.4.1
+
+### Method signature change
+* methods that retrieve segment buffer can now accept a stopping `count` parameter
+* affects: [getBuffer](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getBuffer),
+  [getSegment](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegment), [getSegmentList](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentList),
+  [getSegmentObject](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObject),
+  [getSegmentObjectList](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObjectList)
+
 # Changes v0.3.0 => v0.4.0
 
 ### SegmentObject changed
