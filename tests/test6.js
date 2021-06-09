@@ -82,10 +82,7 @@ const params = [
 const mp4frag = new Mp4Frag();
 
 mp4frag.once('initialized', (data) => {
-  assert(
-    data.mime === 'video/mp4; codecs="avc1.4D401F, mp4a.40.2"',
-    `${data.mime} !== video/mp4; codecs="avc1.4D401F, mp4a.40.2"`
-  );
+  assert(data.mime === 'video/mp4; codecs="avc1.4D401F, mp4a.40.2"', `${data.mime} !== video/mp4; codecs="avc1.4D401F, mp4a.40.2"`);
 });
 
 mp4frag.on('segment', (data) => {
