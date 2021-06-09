@@ -69,11 +69,7 @@ const params = [
 const mp4frag = new Mp4Frag({ hlsPlaylistBase: 'test_Name' });
 
 mp4frag.once('initialized', (data) => {
-  assert(
-    mp4frag.m3u8 ===
-      `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test_Name.mp4"\n`,
-    'Unexpected m3u8 data'
-  );
+  assert(mp4frag.m3u8 === `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test_Name.mp4"\n`, 'Unexpected m3u8 data');
 });
 
 mp4frag.on('segment', (data) => {
