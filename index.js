@@ -4,14 +4,14 @@ const { Transform } = require('stream');
 
 const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]); // ftyp
 const _MOOV = Buffer.from([0x6d, 0x6f, 0x6f, 0x76]); // moov
-const _MOOF = Buffer.from([0x6d, 0x6f, 0x6f, 0x66]); // moof
-const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
-const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
-const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
-const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
-const _TFHD = Buffer.from([0x74, 0x66, 0x68, 0x64]); // tfhd
 const _MDHD = Buffer.from([0x6d, 0x64, 0x68, 0x64]); // mdhd
+const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
+const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
+const _MOOF = Buffer.from([0x6d, 0x6f, 0x6f, 0x66]); // moof
+const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
+const _TFHD = Buffer.from([0x74, 0x66, 0x68, 0x64]); // tfhd
 const _TRUN = Buffer.from([0x74, 0x72, 0x75, 0x6e]); // trun
+const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
 const _HLS_DEF = 4; // hls playlist size default
 const _HLS_MIN = 2; // hls playlist size minimum
 const _HLS_MAX = 20; // hls playlist size maximum
@@ -628,6 +628,62 @@ class Mp4Frag extends Transform {
   }
 
   /**
+   * Search buffer for mdat.
+   * @private
+   */
+  _findMdat(chunk) {
+    if (this._mdatBuffer) {
+      this._mdatBuffer.push(chunk);
+      const chunkLength = chunk.length;
+      this._mdatBufferSize += chunkLength;
+      if (this._mdatLength === this._mdatBufferSize) {
+        this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
+        this._parseChunk = this._findMoof;
+      } else if (this._mdatLength < this._mdatBufferSize) {
+        this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
+        const sliceIndex = chunkLength - (this._mdatBufferSize - this._mdatLength);
+        this._moof = undefined;
+        this._mdatBuffer = undefined;
+        this._mdatBufferSize = undefined;
+        this._mdatLength = undefined;
+        this._moofLength = undefined;
+        this._parseChunk = this._findMoof;
+        this._parseChunk(chunk.slice(sliceIndex));
+      }
+    } else {
+      const chunkLength = chunk.length;
+      if (chunkLength < 8 || chunk.indexOf(_MDAT) !== 4) {
+        this.emit('error', new Error(`${_MDAT.toString()} not found.`));
+        return;
+      }
+      this._mdatLength = chunk.readUInt32BE(0, true);
+      if (this._mdatLength > chunkLength) {
+        this._mdatBuffer = [chunk];
+        this._mdatBufferSize = chunkLength;
+      } else if (this._mdatLength === chunkLength) {
+        this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + chunkLength));
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
+        this._parseChunk = this._findMoof;
+      } else {
+        this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + this._mdatLength));
+        const sliceIndex = this._mdatLength;
+        this._moof = undefined;
+        this._moofLength = undefined;
+        this._mdatLength = undefined;
+        this._parseChunk = this._findMoof;
+        this._parseChunk(chunk.slice(sliceIndex));
+      }
+    }
+  }
+
+  /**
    * Set keyframe index.
    * @private
    */
@@ -718,62 +774,6 @@ class Mp4Frag extends Transform {
      * @property {Number} Object.keyframe - [Mp4Frag.keyframe]{@link Mp4Frag#keyframe}
      */
     this.emit('segment', this.segmentObject);
-  }
-
-  /**
-   * Search buffer for mdat.
-   * @private
-   */
-  _findMdat(chunk) {
-    if (this._mdatBuffer) {
-      this._mdatBuffer.push(chunk);
-      const chunkLength = chunk.length;
-      this._mdatBufferSize += chunkLength;
-      if (this._mdatLength === this._mdatBufferSize) {
-        this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
-        this._moof = undefined;
-        this._mdatBuffer = undefined;
-        this._mdatBufferSize = undefined;
-        this._mdatLength = undefined;
-        this._moofLength = undefined;
-        this._parseChunk = this._findMoof;
-      } else if (this._mdatLength < this._mdatBufferSize) {
-        this._setSegment(Buffer.concat([this._moof, ...this._mdatBuffer], this._moofLength + this._mdatLength));
-        const sliceIndex = chunkLength - (this._mdatBufferSize - this._mdatLength);
-        this._moof = undefined;
-        this._mdatBuffer = undefined;
-        this._mdatBufferSize = undefined;
-        this._mdatLength = undefined;
-        this._moofLength = undefined;
-        this._parseChunk = this._findMoof;
-        this._parseChunk(chunk.slice(sliceIndex));
-      }
-    } else {
-      const chunkLength = chunk.length;
-      if (chunkLength < 8 || chunk.indexOf(_MDAT) !== 4) {
-        this.emit('error', new Error(`${_MDAT.toString()} not found.`));
-        return;
-      }
-      this._mdatLength = chunk.readUInt32BE(0, true);
-      if (this._mdatLength > chunkLength) {
-        this._mdatBuffer = [chunk];
-        this._mdatBufferSize = chunkLength;
-      } else if (this._mdatLength === chunkLength) {
-        this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + chunkLength));
-        this._moof = undefined;
-        this._moofLength = undefined;
-        this._mdatLength = undefined;
-        this._parseChunk = this._findMoof;
-      } else {
-        this._setSegment(Buffer.concat([this._moof, chunk], this._moofLength + this._mdatLength));
-        const sliceIndex = this._mdatLength;
-        this._moof = undefined;
-        this._moofLength = undefined;
-        this._mdatLength = undefined;
-        this._parseChunk = this._findMoof;
-        this._parseChunk(chunk.slice(sliceIndex));
-      }
-    }
   }
 
   /**
