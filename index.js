@@ -70,7 +70,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} mime
+   * @property {String|null} audioCodec
    * - Returns the audio codec information as a <b>String</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -82,7 +82,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} mime
+   * @property {String|null} videoCodec
    * - Returns the video codec information as a <b>String</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
