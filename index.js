@@ -508,15 +508,56 @@ class Mp4Frag extends Transform {
     this._timescale = this._initialization.readUInt32BE(mdhdIndex + (mdhdVersion === 0 ? 16 : 24));
     let index_avc = this._initialization.indexOf(_AVCC);
     let index_hvc = this._initialization.indexOf(_HVCC);
-    const videoCodecIndex = index_avc !== -1 ? index_avc: index_hvc;
+    const videoCodecIndex = index_avc !== -1 ? index_avc : index_hvc;
     const audioCodecIndex = this._initialization.indexOf(_MP4A);
     const codecs = [];
     if (index_avc !== -1) {
+      // for avcC
       // todo check for other types of video codecs
       this._videoCodec = `avc1.${this._initialization
         .slice(videoCodecIndex + 5, videoCodecIndex + 8)
         .toString('hex')
         .toUpperCase()}`;
+      codecs.push(this._videoCodec);
+    } else {
+      // for hvcC
+      const general_profile_space = (this._initialization[videoCodecIndex + 5] >> 6) & 0x03;
+      const general_tier_flag = (this._initialization[videoCodecIndex + 5] >> 5) & 0x01;
+      const general_profile_idc = this._initialization[videoCodecIndex + 5] & 0x1f;
+      const general_profile_compatibility_flags = this._initialization.slice(videoCodecIndex + 6, videoCodecIndex + 10);
+      const general_constraint_indicator_flags = this._initialization
+        .slice(videoCodecIndex + 10, videoCodecIndex + 16)
+        .toString('hex')
+        .replace(/(00)*$/, '')
+        .match(/.{2}/g);
+      const general_level_idc = this._initialization[videoCodecIndex + 16];
+      let tmp = ['hvc1'];
+      if (general_profile_space == 0x00) {
+        tmp.push(`${general_profile_idc}`);
+      } else if (general_profile_space == 0x01) {
+        tmp.push(`A${general_profile_idc}`);
+      } else if (general_profile_space == 0x10) {
+        tmp.push(`B${general_profile_idc}`);
+      } else if (general_profile_space == 0x11) {
+        tmp.push(`C${general_profile_idc}`);
+      }
+      let reseverBitOrder = Buffer.alloc(4);
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 8; j++) {
+          if ((general_profile_compatibility_flags[i] >> (7 - j)) & (0x01 == 1)) {
+            reseverBitOrder[4 - i - 1] = reseverBitOrder[4 - i - 1] ^ (1 << j);
+          }
+        }
+      }
+      tmp.push(reseverBitOrder.toString('hex').replace(/^0*/g, ''));
+
+      if (general_tier_flag == 0) {
+        tmp.push(`L${general_level_idc}`);
+      } else if (general_tier_flag == 1) {
+        tmp.push(`H${general_level_idc}`);
+      }
+      tmp.push(...general_constraint_indicator_flags);
+      this._videoCodec = tmp.join('.');
       codecs.push(this._videoCodec);
     }
     if (audioCodecIndex !== -1) {
