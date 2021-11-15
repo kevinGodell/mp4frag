@@ -6,6 +6,7 @@ const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]); // ftyp
 const _MOOV = Buffer.from([0x6d, 0x6f, 0x6f, 0x76]); // moov
 const _MDHD = Buffer.from([0x6d, 0x64, 0x68, 0x64]); // mdhd
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
+const _HVCC = Buffer.from([0x68, 0x76, 0x63, 0x43]); // hvcC
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _MOOF = Buffer.from([0x6d, 0x6f, 0x6f, 0x66]); // moof
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
@@ -505,10 +506,12 @@ class Mp4Frag extends Transform {
     const mdhdIndex = this._initialization.indexOf(_MDHD);
     const mdhdVersion = this._initialization[mdhdIndex + 4];
     this._timescale = this._initialization.readUInt32BE(mdhdIndex + (mdhdVersion === 0 ? 16 : 24));
-    const videoCodecIndex = this._initialization.indexOf(_AVCC);
+    let index_avc = this._initialization.indexOf(_AVCC);
+    let index_hvc = this._initialization.indexOf(_HVCC);
+    const videoCodecIndex = index_avc !== -1 ? index_avc: index_hvc;
     const audioCodecIndex = this._initialization.indexOf(_MP4A);
     const codecs = [];
-    if (videoCodecIndex !== -1) {
+    if (index_avc !== -1) {
       // todo check for other types of video codecs
       this._videoCodec = `avc1.${this._initialization
         .slice(videoCodecIndex + 5, videoCodecIndex + 8)
