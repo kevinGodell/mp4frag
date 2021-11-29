@@ -1,6 +1,6 @@
 {
   "name": "mp4frag",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Parser that works with ffmpeg to read piped data and split the fmp4 into initialization and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist. Must use the following args with ffmpeg targeting the output: -f mp4 -movflags +frag_keyframe+empty_moov+default_base_moof.",
   "main": "index.js",
   "scripts": {
@@ -8,8 +8,8 @@
     "preversion": "npm test",
     "postversion": "npm run doc",
     "pack": "npm --verbose pack",
-    "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
-    "lint": "eslint --fix ."
+    "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
+    "lint": "./node_modules/.bin/eslint --fix ."
   },
   "repository": {
     "type": "git",
@@ -39,14 +39,17 @@
   },
   "homepage": "https://github.com/kevinGodell/mp4frag#readme",
   "devDependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.0.20",
-    "eslint": "^7.28.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-prettier": "^3.4.1",
     "jsdoc": "^3.6.7",
-    "prettier": "^2.3.1"
+    "prettier": "^2.5.0"
   },
   "files": [
-    "index.js"
+    "package.json",
+    "index.js",
+    "LICENSE",
+    "README.md"
   ]
 }

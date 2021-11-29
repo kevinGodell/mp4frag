@@ -12,13 +12,16 @@ const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _TFHD = Buffer.from([0x74, 0x66, 0x68, 0x64]); // tfhd
 const _TRUN = Buffer.from([0x74, 0x72, 0x75, 0x6e]); // trun
 const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
-const _HLS_DEF = 4; // hls playlist size default
-const _HLS_MIN = 2; // hls playlist size minimum
-const _HLS_MAX = 20; // hls playlist size maximum
-const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory
-const _SEG_DEF = 2; // segment list size default
-const _SEG_MIN = 2; // segment list size minimum
-const _SEG_MAX = 30; // segment list size maximum
+const _HLS_INIT_DEF = true; // hls playlist available after initialization and before 1st segment
+const _HLS_SIZE_DEF = 4; // hls playlist size default
+const _HLS_SIZE_MIN = 2; // hls playlist size minimum
+const _HLS_SIZE_MAX = 20; // hls playlist size maximum
+const _HLS_EXTRA_DEF = 0; // hls playlist extra segments in memory default
+const _HLS_EXTRA_MIN = 0; // hls playlist extra segments in memory minimum
+const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory maximum
+const _SEG_SIZE_DEF = 2; // segment list size default
+const _SEG_SIZE_MIN = 2; // segment list size minimum
+const _SEG_SIZE_MAX = 30; // segment list size maximum
 
 /**
  * @fileOverview
@@ -32,7 +35,6 @@ const _SEG_MAX = 30; // segment list size maximum
  * @requires stream.Transform
  */
 class Mp4Frag extends Transform {
-  // noinspection DuplicatedCode
   /**
    * @constructor
    * @param {Object} [options] - Configuration options.
@@ -45,32 +47,30 @@ class Mp4Frag extends Transform {
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
-    super(options);
+    super({ readableObjectMode: true });
     if (typeof options === 'object') {
       if (typeof options.hlsPlaylistBase !== 'undefined') {
         if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
           throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
         }
         this._hlsPlaylistBase = options.hlsPlaylistBase;
-        this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, true);
-        this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_DEF, _HLS_MIN, _HLS_MAX);
-        this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, 0, 0, _HLS_EXTRA_MAX);
+        this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, _HLS_INIT_DEF);
+        this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_SIZE_DEF, _HLS_SIZE_MIN, _HLS_SIZE_MAX);
+        this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, _HLS_EXTRA_DEF, _HLS_EXTRA_MIN, _HLS_EXTRA_MAX);
         this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
-        this._segments = [];
+        this._segmentObjects = [];
       } else if (typeof options.segmentCount !== 'undefined') {
-        this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_DEF, _SEG_MIN, _SEG_MAX);
-        this._segments = [];
+        this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_SIZE_DEF, _SEG_SIZE_MIN, _SEG_SIZE_MAX);
+        this._segmentObjects = [];
       }
     }
-    this._sequence = -1;
     this._parseChunk = this._findFtyp;
-    this._timescale = 0;
     return this;
   }
 
   /**
    * @readonly
-   * @property {String|null} mime
+   * @property {String|null} audioCodec
    * - Returns the audio codec information as a <b>String</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -82,7 +82,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} mime
+   * @property {String|null} videoCodec
    * - Returns the video codec information as a <b>String</b>.
    * <br/>
    * - Returns <b>Null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -210,7 +210,19 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Array|null} segmentObjectList
+   * @property {boolean} allKeyframes
+   * - Returns a boolean indicating if all segments contain a keyframe.
+   * <br/>
+   * - Returns <b>false</b> if any segments do not contain a keyframe.
+   * @returns {boolean}
+   */
+  get allKeyframes() {
+    return typeof this._allKeyframes === 'boolean' ? this._allKeyframes : true;
+  }
+
+  /**
+   * @readonly
+   * @property {Array|null} segmentObjects
    * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
    * <br/>
    * - <b><code>[{segment, sequence, duration, timestamp, keyframe},...]</code></b>
@@ -218,131 +230,8 @@ class Mp4Frag extends Transform {
    * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {Array|null}
    */
-  get segmentObjectList() {
-    if (this._segments && this._segments.length > 0) {
-      return this._segments;
-    }
-    return null;
-  }
-
-  /**
-   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
-   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
-   * @param {Number} [count = 1] - stop searching when count is reached
-   * @returns {Array|null}
-   * - Returns the Mp4 segments as an <b>Array</b> of <b>Objects</b>
-   * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * <br/>
-   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
-   */
-  getSegmentObjectList(startIndex = -1, isKeyframe = true, count = 1) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
-    if (segmentIndex >= 0) {
-      const temp = [];
-      for (let i = segmentIndex; i < this._segments.length; ++i) {
-        temp.push(this._segments[i].segment);
-      }
-      return temp;
-    }
-    return null;
-  }
-
-  /**
-   * @readonly
-   * @property {Buffer|null} segmentList
-   * - Returns the Mp4 segments concatenated as a single <b>Buffer</b>.
-   * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer|null}
-   */
-  get segmentList() {
-    if (this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ segment }) => segment);
-      return Buffer.concat(temp);
-    }
-    return null;
-  }
-
-  /**
-   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
-   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
-   * @param {Number} [count = 1] - stop searching when count is reached
-   * @returns {Buffer|null}
-   * - Returns the Mp4 segments concatenated as a single <b>Buffer</b>.
-   * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * <br/>
-   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
-   */
-  getSegmentList(startIndex = -1, isKeyframe = true, count = 1) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
-    if (segmentIndex >= 0) {
-      const temp = [];
-      for (let i = segmentIndex; i < this._segments.length; ++i) {
-        temp.push(this._segments[i].segment);
-      }
-      return Buffer.concat(temp);
-    }
-    return null;
-  }
-
-  /**
-   * @readonly
-   * @property {Buffer|null} buffer
-   * - Returns the [initialization]{@link Mp4Frag#initialization} and [segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
-   * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer|null}
-   */
-  get buffer() {
-    if (this._segments && this._segments.length > 0) {
-      const temp = this._segments.map(({ segment }) => segment);
-      return Buffer.concat([this._initialization, ...temp]);
-    }
-    return null;
-  }
-
-  /**
-   * @param {Number} [startIndex = -1] - positive or negative starting index for segment search
-   * @param {Boolean} [isKeyframe = true] - indicate if segment should contain keyframe
-   * @param {Number} [count = 1] - stop searching when count is reached
-   * @returns {Buffer|null}
-   * - Returns the [initialization]{@link Mp4Frag#initialization} and [segmentList]{@link Mp4Frag#segmentList} concatenated as a single <b>Buffer</b>.
-   * <br/>
-   * - Returns <b>Null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * <br/>
-   * - Returns <b>Null</b> if no segment found when filtered with startIndex and isKeyframe.
-   */
-  getBuffer(startIndex = -1, isKeyframe = true, count = 1) {
-    const segmentIndex = this._getSegmentIndex(startIndex, isKeyframe, count);
-    if (segmentIndex >= 0) {
-      const temp = [this._initialization];
-      for (let i = segmentIndex; i < this._segments.length; ++i) {
-        temp.push(this._segments[i].segment);
-      }
-      return Buffer.concat(temp);
-    }
-    return null;
-  }
-
-  /**
-   * @param {Number|String} sequence - sequence number
-   * @returns {Buffer|null}
-   * - Returns the Mp4 segment that corresponds to the numbered sequence as a <b>Buffer</b>.
-   * <br/>
-   * - Returns <b>Null</b> if there is no segment that corresponds to sequence number.
-   */
-  getSegment(sequence) {
-    sequence = Number.parseInt(sequence);
-    if (sequence >= 0 && this._segments && this._segments.length > 0) {
-      for (let i = 0; i < this._segments.length; i++) {
-        if (this._segments[i].sequence === sequence) {
-          return this._segments[i].segment;
-        }
-      }
-    }
-    return null;
+  get segmentObjects() {
+    return this._segmentObjects && this._segmentObjects.length ? this._segmentObjects : null;
   }
 
   /**
@@ -356,10 +245,10 @@ class Mp4Frag extends Transform {
    */
   getSegmentObject(sequence) {
     sequence = Number.parseInt(sequence);
-    if (sequence >= 0 && this._segments && this._segments.length > 0) {
-      for (let i = 0; i < this._segments.length; i++) {
-        if (this._segments[i].sequence === sequence) {
-          return this._segments[i];
+    if (sequence >= 0 && this._segmentObjects && this._segmentObjects.length) {
+      for (let i = 0; i < this._segmentObjects.length; ++i) {
+        if (this._segmentObjects[i].sequence === sequence) {
+          return this._segmentObjects[i];
         }
       }
     }
@@ -377,11 +266,12 @@ class Mp4Frag extends Transform {
      */
     this.emit('reset');
     this._parseChunk = this._findFtyp;
-    this._timescale = 0;
-    this._sequence = -1;
-    if (this._segments) {
-      this._segments = [];
+    if (this._segmentObjects) {
+      this._segmentObjects = [];
     }
+    this._timescale = undefined;
+    this._sequence = undefined;
+    this._allKeyframes = undefined;
     this._mime = undefined;
     this._videoCodec = undefined;
     this._audioCodec = undefined;
@@ -397,45 +287,6 @@ class Mp4Frag extends Transform {
     this._ftyp = undefined;
     this._ftypLength = undefined;
     this._m3u8 = undefined;
-  }
-
-  /**
-   * Get index of segment filtered by startIndex and isKeyframe and count.
-   * @private
-   */
-  _getSegmentIndex(startIndex = -1, isKeyframe = true, count = 1) {
-    let segmentIndex = -1;
-    if (this._segments && this._segments.length > 0) {
-      if (!Number.isInteger(startIndex)) {
-        startIndex = -1;
-      }
-      if (startIndex < 0) {
-        for (let i = this._segments.length + startIndex, c = 0; i >= 0 && c < count; --i) {
-          if (isKeyframe === true) {
-            if (this._segments[i].keyframe > -1) {
-              segmentIndex = i;
-              ++c;
-            }
-          } else {
-            segmentIndex = i;
-            ++c;
-          }
-        }
-      } else {
-        for (let i = startIndex, c = 0; i < this._segments.length && c < count; ++i) {
-          if (isKeyframe === true) {
-            if (this._segments[i].keyframe > -1) {
-              segmentIndex = i;
-              ++c;
-            }
-          } else {
-            segmentIndex = i;
-            ++c;
-          }
-        }
-      }
-    }
-    return segmentIndex;
   }
 
   /**
@@ -476,13 +327,13 @@ class Mp4Frag extends Transform {
     }
     const moovLength = chunk.readUInt32BE(0, true);
     if (moovLength < chunkLength) {
-      this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
+      this._initialize(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
       this._ftyp = undefined;
       this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
       this._parseChunk(chunk.slice(moovLength));
     } else if (moovLength === chunkLength) {
-      this._parseMoov(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
+      this._initialize(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
       this._ftyp = undefined;
       this._ftypLength = undefined;
       this._parseChunk = this._findMoof;
@@ -500,11 +351,14 @@ class Mp4Frag extends Transform {
    * @fires Mp4Frag#initialized
    * @private
    */
-  _parseMoov(value) {
+  _initialize(value) {
     this._initialization = value;
     const mdhdIndex = this._initialization.indexOf(_MDHD);
     const mdhdVersion = this._initialization[mdhdIndex + 4];
     this._timescale = this._initialization.readUInt32BE(mdhdIndex + (mdhdVersion === 0 ? 16 : 24));
+    this._timestamp = Date.now();
+    this._sequence = -1;
+    this._allKeyframes = true;
     const videoCodecIndex = this._initialization.indexOf(_AVCC);
     const audioCodecIndex = this._initialization.indexOf(_MP4A);
     const codecs = [];
@@ -526,7 +380,6 @@ class Mp4Frag extends Transform {
       return;
     }
     this._mime = `${this.videoCodec !== null ? 'video' : 'audio'}/mp4; codecs="${codecs.join(', ')}"`;
-    this._timestamp = Date.now();
     if (this._hlsPlaylistBase && this._hlsPlaylistInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
@@ -697,6 +550,7 @@ class Mp4Frag extends Transform {
         return;
       }
     }
+    this._allKeyframes = false;
     this._keyframe = -1;
   }
 
@@ -729,26 +583,26 @@ class Mp4Frag extends Transform {
     this._setKeyframe();
     this._setDurTime();
     this._sequence++;
-    if (this._segments) {
-      this._segments.push({
+    if (this._segmentObjects) {
+      this._segmentObjects.push({
         segment: this._segment,
         sequence: this._sequence,
         duration: this._duration,
         timestamp: this._timestamp,
         keyframe: this._keyframe,
       });
-      while (this._segments.length > this._segmentCount) {
-        this._segments.shift();
+      while (this._segmentObjects.length > this._segmentCount) {
+        this._segmentObjects.shift();
       }
       if (this._hlsPlaylistBase) {
-        let i = this._segments.length > this._hlsPlaylistSize ? this._segments.length - this._hlsPlaylistSize : 0;
-        const mediaSequence = this._segments[i].sequence;
+        let i = this._segmentObjects.length > this._hlsPlaylistSize ? this._segmentObjects.length - this._hlsPlaylistSize : 0;
+        const mediaSequence = this._segmentObjects[i].sequence;
         let targetDuration = 1;
         let segments = '';
-        for (i; i < this._segments.length; i++) {
-          targetDuration = Math.max(targetDuration, this._segments[i].duration);
-          segments += `#EXTINF:${this._segments[i].duration.toFixed(6)},\n`;
-          segments += `${this._hlsPlaylistBase}${this._segments[i].sequence}.m4s\n`;
+        for (i; i < this._segmentObjects.length; i++) {
+          targetDuration = Math.max(targetDuration, this._segmentObjects[i].duration);
+          segments += `#EXTINF:${this._segmentObjects[i].duration.toFixed(6)},\n`;
+          segments += `${this._hlsPlaylistBase}${this._segmentObjects[i].sequence}.m4s\n`;
         }
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
@@ -760,7 +614,7 @@ class Mp4Frag extends Transform {
       }
     }
     if (this._readableState.pipesCount > 0) {
-      this.push(this._segment);
+      this.push(this.segmentObject);
     }
     /**
      * Fires when the latest Mp4 segment is parsed from the piped data.
@@ -804,16 +658,7 @@ class Mp4Frag extends Transform {
    */
   static _validateNumber(number, def, min, max) {
     number = Number.parseInt(number);
-    if (isNaN(number)) {
-      return def;
-    }
-    if (number < min) {
-      return min;
-    }
-    if (number > max) {
-      return max;
-    }
-    return number;
+    return isNaN(number) ? def : number < min ? min : number > max ? max : number;
   }
 
   /**
