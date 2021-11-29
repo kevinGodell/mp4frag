@@ -8,8 +8,8 @@
     "preversion": "npm test",
     "postversion": "npm run doc",
     "pack": "npm --verbose pack",
-    "doc": "jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
-    "lint": "eslint --fix ."
+    "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
+    "lint": "./node_modules/.bin/eslint --fix ."
   },
   "repository": {
     "type": "git",
@@ -44,9 +44,12 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
     "jsdoc": "^3.6.7",
-    "prettier": "^2.4.0"
+    "prettier": "^2.5.0"
   },
   "files": [
-    "index.js"
+    "package.json",
+    "index.js",
+    "LICENSE",
+    "README.md"
   ]
 }
