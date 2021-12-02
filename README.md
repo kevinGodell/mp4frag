@@ -1,6 +1,6 @@
 # mp4frag
 
-###### [![Build Status](https://travis-ci.org/kevinGodell/mp4frag.svg?branch=master)](https://travis-ci.org/kevinGodell/mp4frag) [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
+###### [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
 
 Parser that works with ffmpeg to read piped data and split the fmp4 into initialization and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist.
 ***You must use the correct output args with ffmpeg to create a compatible fragmented mp4 format similar to the following real world examples:***
@@ -14,6 +14,14 @@ Parser that works with ffmpeg to read piped data and split the fmp4 into initial
 * [Live Video Experience (LiVE)](https://video-experience.live/)  
 * [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-streamer)
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
+
+### Known Limitations:
+* only supports fragmented mp4 video encoded as h.264
+
+# Changes v0.4.1 => v0.5.0
+
+### Method signature change
+* removed methods: getBuffer, getSegment, getSegmentList, getSegmentObjectList
 
 # Changes v0.4.0 => v0.4.1
 
