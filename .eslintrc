@@ -3,7 +3,8 @@
     "prettier"
   ],
   "rules": {
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "camelcase": "error"
   },
   "extends": [
     "plugin:prettier/recommended"
