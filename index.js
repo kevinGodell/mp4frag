@@ -560,89 +560,36 @@ class Mp4Frag extends Transform {
    */
   _setDurTime() {
     // derived from https://github.com/video-dev/hls.js/blob/04cc5f167dac2aed4e41e493125968838cb32445/src/utils/mp4-tools.ts#L392
-    let duration = 0;
-    const tfhdIndex = this._segment.indexOf(_TFHD); // TFHD is full box
-    let rdPtr = tfhdIndex + 4; //Box_type
-    const tfhdFlags = this._segment.readUInt32BE(rdPtr); //Version + flags
-    rdPtr = rdPtr + 4;
-
-    let trackId = this._segment.readUInt32BE(rdPtr);
-    rdPtr = rdPtr + 4;
-
-    //base_data_offset
-    if( tfhdFlags & 0x000001 )  {
-        rdPtr = rdPtr + 8;  //Not reading data, just skipping right now
-    }
-
-    //sample_description_index_present
-    if( tfhdFlags & 0x000002 ) {
-        rdPtr = rdPtr + 4;  //Not reading data, just skipping right now
-    }
-
-    let defaultSampleDuration = 0;
-    if( tfhdFlags & 0x000008 )
-    {
-        defaultSampleDuration = this._segment.readUInt32BE(rdPtr);
-        rdPtr = rdPtr + 4;
-    }
-
-    //default sample size
-    if( tfhdFlags & 0x000010 ) {
-        rdPtr = rdPtr+4;  //Not reading data, just skipping right now
-    }
-    //default sample flags
-    if( tfhdFlags & 0x000020 ) {
-        rdPtr = rdPtr + 4;  //Not reading data, just skipping right now - might be needed in some cases
-    }
-
-    if(tfhdFlags & 0x010000)
-    {
-        console.log("Duration is empty flag set ");
-        duration = 0;
-    }
-    else
-    {
-    const trunIndex = this._segment.indexOf(_TRUN);
-        rdPtr = trunIndex + 4; //Box_type
-        const trunFlags = this._segment.readUInt32BE(rdPtr); //Version + flags
-        rdPtr = rdPtr + 4;
-        const sampleCount = this._segment.readUInt32BE(rdPtr);
-        rdPtr = rdPtr + 4;
-
-        if (trunFlags & 0x000001) { // data offset present
-            rdPtr += 4;
+    const duration = (() => {
+      const trunIndex = this._segment.indexOf(_TRUN);
+      let trunOffset = trunIndex + 4;
+      const trunFlags = this._segment.readUInt32BE(trunOffset);
+      trunOffset += 4;
+      const sampleCount = this._segment.readUInt32BE(trunOffset);
+      // prefer using trun sample durations
+      if (trunFlags & 0x000100) {
+        trunOffset += 4;
+        trunFlags & 0x000001 && (trunOffset += 4);
+        trunFlags & 0x000004 && (trunOffset += 4);
+        const increment = 4 + (trunFlags & 0x000200 && 4) + (trunFlags & 0x000400 && 4) + (trunFlags & 0x000800 && 4);
+        let sampleDurationSum = 0;
+        for (let i = 0; i < sampleCount; ++i, trunOffset += increment) {
+          sampleDurationSum += this._segment.readUInt32BE(trunOffset);
         }
-
-        let first_sample_flags = 0;
-        let start_index = 0;
-        if (trunFlags & 0x000004) { // first-sample-flags present
-           rdPtr = rdPtr + 4;
-        }
-        for(let i = 0;i < sampleCount;i++)
-        {
-            if (trunFlags & 0x000100) { // sample-duration present
-                duration +=  this._segment.readUInt32BE(rdPtr);
-                rdPtr = rdPtr + 4;
-            }
-            if (trunFlags & 0x000200) { // sample-size present
-                rdPtr += 4;
-            }
-            if (trunFlags & 0x000400) { // sample-flags present
-                rdPtr += 4;
-            }
-            if (trunFlags & 0x000800) { // sample-composition-time-offsets present
-                rdPtr += 4;
-            }
-        }
-        if (trunFlags & 0x000100) { // sample-duration present
-            duration = (duration) / this._timescale;
-        }
-        else
-        {
-            duration = (defaultSampleDuration * sampleCount) / this._timescale;
-        }
-
-    }
+        return sampleDurationSum / this._timescale;
+      }
+      // fallback to using tfhd default sample duration
+      const tfhdIndex = this._segment.indexOf(_TFHD);
+      let tfhdOffset = tfhdIndex + 4;
+      const tfhdFlags = this._segment.readUInt32BE(tfhdOffset);
+      if (tfhdFlags & 0x000008) {
+        tfhdOffset += 8;
+        tfhdFlags & 0x000001 && (tfhdOffset += 8);
+        tfhdFlags & 0x000002 && (tfhdOffset += 4);
+        return (this._segment.readUInt32BE(tfhdOffset) * sampleCount) / this._timescale;
+      }
+      return 0;
+    })();
     const currentTime = Date.now();
     const elapsed = (currentTime - this._timestamp) / 1000;
     this._timestamp = currentTime;
