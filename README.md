@@ -2,7 +2,8 @@
 
 ###### [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
 
-Parser that works with ffmpeg to read piped data and split the fmp4 into initialization and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist.
+A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.
+
 ***You must use the correct output args with ffmpeg to create a compatible fragmented mp4 format similar to the following real world examples:***
 * `ffmpeg -loglevel quiet -rtsp_transport tcp -i rtsp://192.168.1.21:554/user=admin_password=pass_channel=0_stream=1.sdp?real_stream -reset_timestamps 1 -an -c:v copy -f mp4 -movflags +frag_every_frame+empty_moov+default_base_moof -min_frag_duration 500000 pipe:1`
 * `ffmpeg -loglevel quiet -rtsp_transport tcp -i rtsp://192.168.1.18:554/user=admin&password=pass&channel=1&stream=1.sdp -reset_timestamps 1 -an -c:v copy -f mp4 -movflags +frag_keyframe+empty_moov+default_base_moof pipe:1`
@@ -11,12 +12,15 @@ Parser that works with ffmpeg to read piped data and split the fmp4 into initial
 
 ### Interesting projects using mp4frag:
 * [Shinobi - Simple CCTV and NVR Solution](https://shinobi.video/)
-* [Live Video Experience (LiVE)](https://video-experience.live/)  
+* [Live Video Experience (LiVE)](https://video-experience.live/)
 * [ffmpeg-streamer](https://github.com/kevinGodell/ffmpeg-streamer)
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
 
 ### Known Limitations:
 * only supports fragmented mp4 video encoded as h.264
+
+# Changes v0.5.0 => v0.5.1
+* better media segment duration handling
 
 # Changes v0.4.1 => v0.5.0
 
