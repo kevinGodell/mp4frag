@@ -1,7 +1,7 @@
 {
   "name": "mp4frag",
   "version": "0.5.0",
-  "description": "Parser that works with ffmpeg to read piped data and split the fmp4 into initialization and media segments. It can also get the codec info and generate an fmp4 HLS m3u8 playlist. Must use the following args with ffmpeg targeting the output: -f mp4 -movflags +frag_keyframe+empty_moov+default_base_moof.",
+  "description": "A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.",
   "main": "index.js",
   "scripts": {
     "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8",
