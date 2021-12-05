@@ -1,6 +1,6 @@
 # mp4frag
 
-###### [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
+###### [![build](https://github.com/kevinGodell/mp4frag/actions/workflows/node.js.yml/badge.svg)](https://github.com/kevinGodell/mp4frag/actions/workflows/node.js.yml) [![Build status](https://ci.appveyor.com/api/projects/status/n9emuydmqgf845v0/branch/master?svg=true)](https://ci.appveyor.com/project/kevinGodell/mp4frag/branch/master) [![GitHub issues](https://img.shields.io/github/issues/kevinGodell/mp4frag.svg)](https://github.com/kevinGodell/mp4frag/issues) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/kevinGodell/mp4frag/master/LICENSE) [![npm](https://img.shields.io/npm/dt/mp4frag.svg?style=flat-square)](https://www.npmjs.com/package/mp4frag)
 
 A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.
 
