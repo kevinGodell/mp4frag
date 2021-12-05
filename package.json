@@ -44,7 +44,7 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
     "jsdoc": "^3.6.7",
-    "prettier": "^2.5.0"
+    "prettier": "^2.5.1"
   },
   "files": [
     "package.json",
