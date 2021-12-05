@@ -23,6 +23,9 @@ const scale = 640; //used as width of video, height will automatically scale
 let counter = 0;
 
 const params = [
+  '-use_wallclock_as_timestamps',
+  '1', // 0|1 will change duration calculations
+
   /* log info to console */
   '-loglevel',
   'quiet',
@@ -52,7 +55,18 @@ const params = [
   '-f',
   'mp4',
   '-movflags',
-  '+dash',
+  //'+empty_moov+negative_cts_offsets',
+  //'+empty_moov+omit_tfhd_offset',// 56 = ( 8 + 16 + 32 )
+  //'+empty_moov',// 57 = ( 1 + 8 + 16 + 32 )
+  //'+empty_moov+default_base_moof+omit_tfhd_offset',// 131128 = ( 8 + 16 + 32 + 131072 )
+  //'+dash',// 131128 = ( 8 + 16 + 32 + 131072 )
+  //'+frag_keyframe', // 57 = ( 1 + 8 + 16 + 32 )
+  '+frag_every_frame',
+
+  '-min_frag_duration',
+  '500000',
+
+  //'+empty_moov+default_base_moof',// 131128  = ( 8 + 16 + 32 + 131072 )
   //'-f', 'segment',
   //'-reset_timestamps', 1,
   //'-segment_time', 10,
@@ -96,7 +110,7 @@ mp4frag.once('initialized', (data) => {
 });
 
 mp4frag.on('segment', (data) => {
-  console.log('seg');
+  console.log('segment duration', data.duration);
   counter++;
 });
 

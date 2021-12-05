@@ -560,12 +560,36 @@ class Mp4Frag extends Transform {
    */
   _setDurTime() {
     // derived from https://github.com/video-dev/hls.js/blob/04cc5f167dac2aed4e41e493125968838cb32445/src/utils/mp4-tools.ts#L392
-    const tfhdIndex = this._segment.indexOf(_TFHD);
-    const tfhdFlags = this._segment.readUInt32BE(tfhdIndex + 4);
-    const defaultSampleDuration = tfhdFlags & 0x000008 && this._segment.readUInt32BE(tfhdIndex + 12 + (tfhdFlags & 0x000001 ? 8 : 0) + (tfhdFlags & 0x000002 ? 4 : 0));
-    const trunIndex = this._segment.indexOf(_TRUN);
-    const sampleCount = this._segment.readUInt32BE(trunIndex + 8);
-    const duration = (defaultSampleDuration * sampleCount) / this._timescale;
+    const duration = (() => {
+      const trunIndex = this._segment.indexOf(_TRUN);
+      let trunOffset = trunIndex + 4;
+      const trunFlags = this._segment.readUInt32BE(trunOffset);
+      trunOffset += 4;
+      const sampleCount = this._segment.readUInt32BE(trunOffset);
+      // prefer using trun sample durations
+      if (trunFlags & 0x000100) {
+        trunOffset += 4;
+        trunFlags & 0x000001 && (trunOffset += 4);
+        trunFlags & 0x000004 && (trunOffset += 4);
+        const increment = 4 + (trunFlags & 0x000200 && 4) + (trunFlags & 0x000400 && 4) + (trunFlags & 0x000800 && 4);
+        let sampleDurationSum = 0;
+        for (let i = 0; i < sampleCount; ++i, trunOffset += increment) {
+          sampleDurationSum += this._segment.readUInt32BE(trunOffset);
+        }
+        return sampleDurationSum / this._timescale;
+      }
+      // fallback to using tfhd default sample duration
+      const tfhdIndex = this._segment.indexOf(_TFHD);
+      let tfhdOffset = tfhdIndex + 4;
+      const tfhdFlags = this._segment.readUInt32BE(tfhdOffset);
+      if (tfhdFlags & 0x000008) {
+        tfhdOffset += 8;
+        tfhdFlags & 0x000001 && (tfhdOffset += 8);
+        tfhdFlags & 0x000002 && (tfhdOffset += 4);
+        return (this._segment.readUInt32BE(tfhdOffset) * sampleCount) / this._timescale;
+      }
+      return 0;
+    })();
     const currentTime = Date.now();
     const elapsed = (currentTime - this._timestamp) / 1000;
     this._timestamp = currentTime;
