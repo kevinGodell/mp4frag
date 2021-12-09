@@ -6,6 +6,7 @@ const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]); // ftyp
 const _MOOV = Buffer.from([0x6d, 0x6f, 0x6f, 0x76]); // moov
 const _MDHD = Buffer.from([0x6d, 0x64, 0x68, 0x64]); // mdhd
 const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
+const _HVCC = Buffer.from([0x68, 0x76, 0x63, 0x43]); // hvcC
 const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _MOOF = Buffer.from([0x6d, 0x6f, 0x6f, 0x66]); // moof
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
@@ -385,14 +386,58 @@ class Mp4Frag extends Transform {
     this._totalDuration = 0;
     this._totalByteLength = this._initialization.byteLength;
     const videoCodecIndex = this._initialization.indexOf(_AVCC);
+    let index_avc = this._initialization.indexOf(_AVCC);
+    let index_hvc = this._initialization.indexOf(_HVCC);
+    const videoCodecIndex = index_avc !== -1 ? index_avc : index_hvc;
     const audioCodecIndex = this._initialization.indexOf(_MP4A);
     const codecs = [];
-    if (videoCodecIndex !== -1) {
+    if (index_avc !== -1) {
+      //for avcC
       // todo check for other types of video codecs
       this._videoCodec = `avc1.${this._initialization
         .slice(videoCodecIndex + 5, videoCodecIndex + 8)
         .toString('hex')
         .toUpperCase()}`;
+      codecs.push(this._videoCodec);
+    } else {
+      // for hvcC
+      const general_profile_space = (this._initialization[videoCodecIndex + 5] >> 6) & 0x03;
+      const general_tier_flag = (this._initialization[videoCodecIndex + 5] >> 5) & 0x01;
+      const general_profile_idc = this._initialization[videoCodecIndex + 5] & 0x1f;
+      const general_profile_compatibility_flags = this._initialization.slice(videoCodecIndex + 6, videoCodecIndex + 10);
+      const general_constraint_indicator_flags = this._initialization
+        .slice(videoCodecIndex + 10, videoCodecIndex + 16)
+        .toString('hex')
+        .replace(/(00)*$/, '')
+        .match(/.{2}/g);
+      const general_level_idc = this._initialization[videoCodecIndex + 16];
+      let tmp = ['hvc1'];
+      if (general_profile_space == 0x00) {
+        tmp.push(`${general_profile_idc}`);
+      } else if (general_profile_space == 0x01) {
+        tmp.push(`A${general_profile_idc}`);
+      } else if (general_profile_space == 0x10) {
+        tmp.push(`B${general_profile_idc}`);
+      } else if (general_profile_space == 0x11) {
+        tmp.push(`C${general_profile_idc}`);
+      }
+      let reseverBitOrder = Buffer.alloc(4);
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 8; j++) {
+          if ((general_profile_compatibility_flags[i] >> (7 - j)) & (0x01 == 1)) {
+            reseverBitOrder[4 - i - 1] = reseverBitOrder[4 - i - 1] ^ (1 << j);
+          }
+        }
+      }
+      tmp.push(reseverBitOrder.toString('hex').replace(/^0*/g, ''));
+
+      if (general_tier_flag == 0) {
+        tmp.push(`L${general_level_idc}`);
+      } else if (general_tier_flag == 1) {
+        tmp.push(`H${general_level_idc}`);
+      }
+      tmp.push(...general_constraint_indicator_flags);
+      this._videoCodec = tmp.join('.');
       codecs.push(this._videoCodec);
     }
     if (audioCodecIndex !== -1) {
