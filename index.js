@@ -174,6 +174,30 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Number} totalDuration
+   * - Returns the total duration of all Mp4 segments as a <b>Float</b>(<i>seconds</i>).
+   * <br/>
+   * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * @returns {Number}
+   */
+  get totalDuration() {
+    return this._totalDuration || -1;
+  }
+
+  /**
+   * @readonly
+   * @property {Number} totalByteLength
+   * - Returns the total byte length of the Mp4 initialization and all Mp4 segments as ant <b>Int</b>(<i>bytes</i>).
+   * <br/>
+   * - Returns <b>-1</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {Number}
+   */
+  get totalByteLength() {
+    return this._totalByteLength || -1;
+  }
+
+  /**
+   * @readonly
    * @property {String|null} m3u8
    * - Returns the fmp4 HLS m3u8 playlist as a <b>String</b>.
    * <br/>
@@ -279,6 +303,8 @@ class Mp4Frag extends Transform {
     this._segment = undefined;
     this._timestamp = undefined;
     this._duration = undefined;
+    this._totalDuration = undefined;
+    this._totalByteLength = undefined;
     this._moof = undefined;
     this._mdatBuffer = undefined;
     this._moofLength = undefined;
@@ -359,6 +385,8 @@ class Mp4Frag extends Transform {
     this._timestamp = Date.now();
     this._sequence = -1;
     this._allKeyframes = true;
+    this._totalDuration = 0;
+    this._totalByteLength = this._initialization.byteLength;
     const videoCodecIndex = this._initialization.indexOf(_AVCC);
     const audioCodecIndex = this._initialization.indexOf(_MP4A);
     const codecs = [];
@@ -615,8 +643,15 @@ class Mp4Frag extends Transform {
         timestamp: this._timestamp,
         keyframe: this._keyframe,
       });
+      this._totalDuration += this._duration;
+      this._totalByteLength += this._segment.byteLength;
       while (this._segmentObjects.length > this._segmentCount) {
-        this._segmentObjects.shift();
+        const {
+          duration,
+          segment: { byteLength },
+        } = this._segmentObjects.shift();
+        this._totalDuration -= duration;
+        this._totalByteLength -= byteLength;
       }
       if (this._hlsPlaylistBase) {
         let i = this._segmentObjects.length > this._hlsPlaylistSize ? this._segmentObjects.length - this._hlsPlaylistSize : 0;
@@ -636,6 +671,9 @@ class Mp4Frag extends Transform {
         m3u8 += segments;
         this._m3u8 = m3u8;
       }
+    } else {
+      this._totalDuration = this._duration;
+      this._totalByteLength = this._initialization.byteLength + this._segment.byteLength;
     }
     if (this._readableState.pipesCount > 0) {
       this.push(this.segmentObject);
