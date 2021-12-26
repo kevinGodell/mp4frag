@@ -19,6 +19,11 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 ### Known Limitations:
 * only supports fragmented mp4 video encoded as h.264
 
+# Changes v0.5.1 => v0.5.2
+### Property getters added
+* [totalDuration](https://kevingodell.github.io/mp4frag/Mp4Frag.html#totalDuration)
+* [totalByteLength](https://kevingodell.github.io/mp4frag/Mp4Frag.html#totalByteLength)
+
 # Changes v0.5.0 => v0.5.1
 * better media segment duration handling
 
