@@ -66,8 +66,13 @@ const params = [
 
 const mp4frag = new Mp4Frag();
 
+assert(mp4frag.totalDuration === -1);
+assert(mp4frag.totalByteLength === -1);
+
 mp4frag.once('initialized', (data) => {
   assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+  assert(mp4frag.totalDuration === -1);
+  assert(mp4frag.totalByteLength === 801);
 });
 
 mp4frag.on('segment', (data) => {
@@ -88,7 +93,9 @@ ffmpeg.once('error', (error) => {
 ffmpeg.once('exit', (code, signal) => {
   assert(counter === count, `${counter} !== ${count}`);
   assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
+  assert(mp4frag.totalDuration === 0.5);
+  assert(mp4frag.totalByteLength === 7875);
   console.timeEnd('=====> test2.js');
 });
 
-ffmpeg.stdio[1].pipe(mp4frag);
+ffmpeg.stdio[1].pipe(mp4frag, { end: false });
