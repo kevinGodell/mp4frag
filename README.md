@@ -19,6 +19,10 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 ### Known Limitations:
 * only supports fragmented mp4 video encoded as h.264
 
+# Changes v0.5.2 => v0.5.3
+### Property getters added
+* [getSegmentObject](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObject) internal improvements
+
 # Changes v0.5.1 => v0.5.2
 ### Property getters added
 * [totalDuration](https://kevingodell.github.io/mp4frag/Mp4Frag.html#totalDuration)
@@ -110,7 +114,7 @@ const ffmpeg = spawn(
 ffmpeg.stdio[1].pipe(mp4frag);
 ```
   * **m3u8 playlist will now be available via `mp4frag.m3u8` and can be served to a client browser via express**
-  * **segments in playlist can be accessed by sequence number via `mp4frag.getSegment(6)`, with `6` being the current sequence number**
+  * **segments in playlist can be accessed by sequence number via `mp4frag.getSegmentObject(6)`, with `6` being the current sequence number**
 
 #### Generated m3u8 playlist will look like the following example pulled from my live feed
 
@@ -129,7 +133,7 @@ back_yard7.m4s
 back_yard8.m4s
 ```
 
-#### Setting up some server routes to respond to http requests for playing live HLS feed
+#### Setting up server routes to respond to http requests for playing live HLS feed
 
 ```javascript
 app.get('/back_yard.m3u8', (req, res) => {
@@ -151,10 +155,11 @@ app.get('/init-back_yard.mp4', (req, res) => {
 });
 
 app.get('/back_yard:id.m4s', (req, res) => {
-    const segment = mp4frag.getSegment(req.params.id);
-    if (segment) {
+    const segmentObject = mp4frag.getSegmentObject(req.params.id);
+    
+    if (segmentObject) {
         res.writeHead(200, {'Content-Type': 'video/mp4'});
-        res.end(segment);
+        res.end(segmentObject.segment);
     } else {
         res.sendStatus(503);
     }
@@ -168,8 +173,8 @@ const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
 
-//3 past segments will be held in buffer for later access via mp4frag.buffer
-//if each segment has a duration of 2 seconds, then buffer will contain 6 seconds of video
+// 3 past segments will be held in buffer for later access via mp4frag.buffer
+// if each segment has a duration of 2 seconds, then buffer will contain 6 seconds of video
 const mp4frag = new Mp4Frag({segmentCount: 3});
 
 const ffmpeg = spawn(
@@ -181,7 +186,7 @@ const ffmpeg = spawn(
 ffmpeg.stdio[1].pipe(mp4frag);
 ```
 
-##### Moments later, some triggering event occurs such as motion detection, and we need to record buffered video from before the event occurred:
+##### Moments later, a triggering event occurs such as motion detection, and we need to record buffered video from before the event occurred:
 
 ```javascript
 const fs = require('fs');
@@ -190,9 +195,18 @@ const fileName = `${Date.now()}.mp4`;
 
 const writeStream = fs.createWriteStream(fileName);
 
-//write the currently buffered Mp4 initialization fragment and media segments to get a complete mp4 file
-writeStream.write(mp4frag.buffer);
+const { initialization, segmentObjects } = mp4frag;
+
+if (initialization && segmentObjects) {
+  // write the initialization fragment
+  writeStream._write(initialization);
+
+  // write the media segments
+  segmentObjects.forEach(({segment}) => {
+    writeStream.write(segment);
+  });
+}
     
-//end
+// end
 writeStream.end();
 ```
