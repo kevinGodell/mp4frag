@@ -321,7 +321,7 @@ class Mp4Frag extends Transform {
       this.emit('error', new Error(`${_FTYP.toString()} not found.`));
       return;
     }
-    this._ftypLength = chunk.readUInt32BE(0, true);
+    this._ftypLength = chunk.readUInt32BE(0);
     if (this._ftypLength < chunkLength) {
       this._ftyp = chunk.slice(0, this._ftypLength);
       this._parseChunk = this._findMoov;
@@ -347,7 +347,7 @@ class Mp4Frag extends Transform {
       this.emit('error', new Error(`${_MOOV.toString()} not found.`));
       return;
     }
-    const moovLength = chunk.readUInt32BE(0, true);
+    const moovLength = chunk.readUInt32BE(0);
     if (moovLength < chunkLength) {
       this._initialize(Buffer.concat([this._ftyp, chunk], this._ftypLength + moovLength));
       this._ftyp = undefined;
@@ -484,7 +484,7 @@ class Mp4Frag extends Transform {
         this._parseChunk(chunk);
         return;
       }
-      this._moofLength = chunk.readUInt32BE(0, true);
+      this._moofLength = chunk.readUInt32BE(0);
       if (this._moofLength === 0) {
         this.emit('error', new Error(`Bad data from input stream reports ${_MOOF.toString()} length of 0.`));
         return;
@@ -538,7 +538,7 @@ class Mp4Frag extends Transform {
         this.emit('error', new Error(`${_MDAT.toString()} not found.`));
         return;
       }
-      this._mdatLength = chunk.readUInt32BE(0, true);
+      this._mdatLength = chunk.readUInt32BE(0);
       if (this._mdatLength > chunkLength) {
         this._mdatBuffer = [chunk];
         this._mdatBufferSize = chunkLength;
