@@ -382,8 +382,7 @@ class Mp4Frag extends Transform {
       const general_constraint_indicator_flags = this._initialization
         .slice(videoCodecIndex + 10, videoCodecIndex + 16)
         .toString('hex')
-        .replace(/(00)*$/, '')
-        .match(/.{2}/g);
+        .replace(/(00)*$/, '');
       const general_level_idc = this._initialization[videoCodecIndex + 16];
       let tmp = ['hvc1'];
       if (general_profile_space == 0x00) {
@@ -410,7 +409,7 @@ class Mp4Frag extends Transform {
       } else if (general_tier_flag == 1) {
         tmp.push(`H${general_level_idc}`);
       }
-      tmp.push(...general_constraint_indicator_flags);
+      tmp.push(general_constraint_indicator_flags);
       this._videoCodec = tmp.join('.');
       codecs.push(this._videoCodec);
     }
