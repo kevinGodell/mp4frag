@@ -22,6 +22,7 @@ const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory maximum
 const _SEG_SIZE_DEF = 2; // segment list size default
 const _SEG_SIZE_MIN = 2; // segment list size minimum
 const _SEG_SIZE_MAX = 30; // segment list size maximum
+const _MOOF_SEARCH_LIMIT = 50; // number of allowed attempts to find missing moof atom
 
 /**
  * @fileOverview
@@ -428,19 +429,18 @@ class Mp4Frag extends Transform {
    * Find moof after miss due to corrupt data in pipe.
    * @private
    */
-  _moofHunt(chunk) {
-    if (this._moofHunts < this._moofHuntsLimit) {
-      this._moofHunts++;
-      //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
+  _moofSearch(chunk) {
+    if (this._moofSearches < _MOOF_SEARCH_LIMIT) {
+      this._moofSearches++;
+      //console.warn(`MOOF search attempt number ${this._moofSearches}.`);
       const index = chunk.indexOf(_MOOF);
       if (index > 3 && chunk.length > index + 3) {
-        this._moofHunts = undefined;
-        this._moofHuntsLimit = undefined;
+        this._moofSearches = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(index - 4));
       }
     } else {
-      this.emit('error', new Error(`${_MOOF.toString()} hunt failed after ${this._moofHunts} attempts.`));
+      this.emit('error', new Error(`${_MOOF.toString()} search failed after ${this._moofSearches} attempts.`));
       //return;
     }
   }
@@ -477,10 +477,9 @@ class Mp4Frag extends Transform {
           //console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
           return;
         }
-        //console.warn('Failed to find MOOF. Starting MOOF hunt. Ignore this if your file stream input has ended.');
-        this._moofHunts = 0;
-        this._moofHuntsLimit = 40;
-        this._parseChunk = this._moofHunt;
+        //console.warn('Failed to find MOOF. Starting MOOF search. Ignore this if your file stream input has ended.');
+        this._moofSearches = 0;
+        this._parseChunk = this._moofSearch;
         this._parseChunk(chunk);
         return;
       }
