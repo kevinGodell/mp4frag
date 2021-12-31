@@ -269,12 +269,8 @@ class Mp4Frag extends Transform {
    */
   getSegmentObject(sequence) {
     sequence = Number.parseInt(sequence);
-    if (sequence >= 0 && this._segmentObjects && this._segmentObjects.length) {
-      for (let i = 0; i < this._segmentObjects.length; ++i) {
-        if (this._segmentObjects[i].sequence === sequence) {
-          return this._segmentObjects[i];
-        }
-      }
+    if (this._segmentObjects && this._segmentObjects.length) {
+      return this._segmentObjects[this._segmentObjects.length - 1 - (this._sequence - sequence)] || null;
     }
     return null;
   }
