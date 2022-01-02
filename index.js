@@ -385,7 +385,6 @@ class Mp4Frag extends Transform {
     this._allKeyframes = true;
     this._totalDuration = 0;
     this._totalByteLength = this._initialization.byteLength;
-    const videoCodecIndex = this._initialization.indexOf(_AVCC);
     let index_avc = this._initialization.indexOf(_AVCC);
     let index_hvc = this._initialization.indexOf(_HVCC);
     const videoCodecIndex = index_avc !== -1 ? index_avc : index_hvc;
