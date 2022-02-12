@@ -33,13 +33,21 @@ const { Transform } = require('stream');
 const _FTYP = Buffer.from([0x66, 0x74, 0x79, 0x70]); // ftyp
 const _MOOV = Buffer.from([0x6d, 0x6f, 0x6f, 0x76]); // moov
 const _MDHD = Buffer.from([0x6d, 0x64, 0x68, 0x64]); // mdhd
-const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
-const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
 const _MOOF = Buffer.from([0x6d, 0x6f, 0x6f, 0x66]); // moof
 const _MDAT = Buffer.from([0x6d, 0x64, 0x61, 0x74]); // mdat
 const _TFHD = Buffer.from([0x74, 0x66, 0x68, 0x64]); // tfhd
 const _TRUN = Buffer.from([0x74, 0x72, 0x75, 0x6e]); // trun
 const _MFRA = Buffer.from([0x6d, 0x66, 0x72, 0x61]); // mfra
+const _HVCC = Buffer.from([0x68, 0x76, 0x63, 0x43]); // hvcC
+const _HEV1 = Buffer.from([0x68, 0x65, 0x76, 0x31]); // hev1
+const _HVC1 = Buffer.from([0x68, 0x76, 0x63, 0x31]); // hvc1
+const _AVCC = Buffer.from([0x61, 0x76, 0x63, 0x43]); // avcC
+const _AVC1 = Buffer.from([0x61, 0x76, 0x63, 0x31]); // avc1
+const _AVC2 = Buffer.from([0x61, 0x76, 0x63, 0x32]); // avc2
+const _AVC3 = Buffer.from([0x61, 0x76, 0x63, 0x33]); // avc3
+const _AVC4 = Buffer.from([0x61, 0x76, 0x63, 0x34]); // avc4
+const _MP4A = Buffer.from([0x6d, 0x70, 0x34, 0x61]); // mp4a
+const _ESDS = Buffer.from([0x65, 0x73, 0x64, 0x73]); // esds
 const _HLS_INIT_DEF = true; // hls playlist available after initialization and before 1st segment
 const _HLS_SIZE_DEF = 4; // hls playlist size default
 const _HLS_SIZE_MIN = 2; // hls playlist size minimum
@@ -50,6 +58,7 @@ const _HLS_EXTRA_MAX = 10; // hls playlist extra segments in memory maximum
 const _SEG_SIZE_DEF = 2; // segment list size default
 const _SEG_SIZE_MIN = 2; // segment list size minimum
 const _SEG_SIZE_MAX = 30; // segment list size maximum
+const _MOOF_SEARCH_LIMIT = 50; // number of allowed attempts to find missing moof atom
 
 /**
  * @fileOverview
@@ -71,7 +80,6 @@ class Mp4Frag extends Transform {
    * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
    * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
    * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
-   * @returns {Mp4Frag} this - Returns reference to new instance of Mp4Frag for chaining event listeners.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
@@ -250,14 +258,14 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} keyframe
-   * - Returns the nal keyframe index of the latest Mp4 segment as an &lt;b>Integer&lt;/b>.
+   * @property {boolean} keyframe
+   * - Returns a boolean indicating if the current segment contains a keyframe.
    * &lt;br/>
-   * - Returns &lt;b>-1&lt;/b> if segment contains no keyframe nal.
-   * @returns {Number}
+   * - Returns &lt;b>false&lt;/b> if the current segment does not contain a keyframe.
+   * @returns {boolean}
    */
   get keyframe() {
-    return Number.isInteger(this._keyframe) ? this._keyframe : -1;
+    return typeof this._keyframe === 'boolean' ? this._keyframe : true;
   }
 
   /**
@@ -320,6 +328,7 @@ class Mp4Frag extends Transform {
     this._timescale = undefined;
     this._sequence = undefined;
     this._allKeyframes = undefined;
+    this._keyframe = undefined;
     this._mime = undefined;
     this._videoCodec = undefined;
     this._audioCodec = undefined;
@@ -337,6 +346,7 @@ class Mp4Frag extends Transform {
     this._ftyp = undefined;
     this._ftypLength = undefined;
     this._m3u8 = undefined;
+    this._setKeyFrame = undefined;
   }
 
   /**
@@ -367,6 +377,7 @@ class Mp4Frag extends Transform {
 
   /**
    * Search buffer for moov.
+   * @param {Buffer} chunk
    * @private
    */
   _findMoov(chunk) {
@@ -399,39 +410,37 @@ class Mp4Frag extends Transform {
   /**
    * Parse moov for mime.
    * @fires Mp4Frag#initialized
+   * @param {Buffer} chunk
    * @private
    */
-  _initialize(value) {
-    this._initialization = value;
-    const mdhdIndex = this._initialization.indexOf(_MDHD);
-    const mdhdVersion = this._initialization[mdhdIndex + 4];
-    this._timescale = this._initialization.readUInt32BE(mdhdIndex + (mdhdVersion === 0 ? 16 : 24));
+  _initialize(chunk) {
+    this._initialization = chunk;
+    const mdhdIndex = chunk.indexOf(_MDHD);
+    const mdhdVersion = chunk[mdhdIndex + 4];
+    this._timescale = chunk.readUInt32BE(mdhdIndex + (mdhdVersion === 0 ? 16 : 24));
     this._timestamp = Date.now();
     this._sequence = -1;
     this._allKeyframes = true;
     this._totalDuration = 0;
-    this._totalByteLength = this._initialization.byteLength;
-    const videoCodecIndex = this._initialization.indexOf(_AVCC);
-    const audioCodecIndex = this._initialization.indexOf(_MP4A);
+    this._totalByteLength = chunk.byteLength;
+    this._setKeyFrame = () => {};
     const codecs = [];
-    if (videoCodecIndex !== -1) {
-      // todo check for other types of video codecs
-      this._videoCodec = `avc1.${this._initialization
-        .slice(videoCodecIndex + 5, videoCodecIndex + 8)
-        .toString('hex')
-        .toUpperCase()}`;
+    let mp4Type;
+    if (this._parseCodecAVCC(chunk) || this._parseCodecHVCC(chunk)) {
       codecs.push(this._videoCodec);
+      mp4Type = 'video';
     }
-    if (audioCodecIndex !== -1) {
-      // todo check for other types of audio codecs
-      this._audioCodec = 'mp4a.40.2';
+    if (this._parseCodecMP4A(chunk)) {
       codecs.push(this._audioCodec);
+      if (!this._videoCodec) {
+        mp4Type = 'audio';
+      }
     }
     if (codecs.length === 0) {
       this.emit('error', new Error(`codecs not found.`));
       return;
     }
-    this._mime = `${this.videoCodec !== null ? 'video' : 'audio'}/mp4; codecs="${codecs.join(', ')}"`;
+    this._mime = `${mp4Type}/mp4; codecs="${codecs.join(', ')}"`;
     if (this._hlsPlaylistBase &amp;&amp; this._hlsPlaylistInit) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
@@ -454,27 +463,28 @@ class Mp4Frag extends Transform {
 
   /**
    * Find moof after miss due to corrupt data in pipe.
+   * @param {Buffer} chunk
    * @private
    */
-  _moofHunt(chunk) {
-    if (this._moofHunts &lt; this._moofHuntsLimit) {
-      this._moofHunts++;
-      //console.warn(`MOOF hunt attempt number ${this._moofHunts}.`);
+  _moofSearch(chunk) {
+    if (this._moofSearches &lt; _MOOF_SEARCH_LIMIT) {
+      this._moofSearches++;
+      //console.warn(`MOOF search attempt number ${this._moofSearches}.`);
       const index = chunk.indexOf(_MOOF);
       if (index > 3 &amp;&amp; chunk.length > index + 3) {
-        this._moofHunts = undefined;
-        this._moofHuntsLimit = undefined;
+        this._moofSearches = undefined;
         this._parseChunk = this._findMoof;
         this._parseChunk(chunk.slice(index - 4));
       }
     } else {
-      this.emit('error', new Error(`${_MOOF.toString()} hunt failed after ${this._moofHunts} attempts.`));
+      this.emit('error', new Error(`${_MOOF.toString()} search failed after ${this._moofSearches} attempts.`));
       //return;
     }
   }
 
   /**
    * Search buffer for moof.
+   * @param {Buffer} chunk
    * @private
    */
   _findMoof(chunk) {
@@ -499,16 +509,15 @@ class Mp4Frag extends Transform {
     } else {
       const chunkLength = chunk.length;
       if (chunkLength &lt; 8 || chunk.indexOf(_MOOF) !== 4) {
-        //ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
+        // ffmpeg occasionally pipes corrupt data, lets try to get back to normal if we can find next MOOF box before attempts run out
         const mfraIndex = chunk.indexOf(_MFRA);
         if (mfraIndex !== -1) {
-          //console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
+          // console.log(`MFRA was found at ${mfraIndex}. This is expected at the end of stream.`);
           return;
         }
-        //console.warn('Failed to find MOOF. Starting MOOF hunt. Ignore this if your file stream input has ended.');
-        this._moofHunts = 0;
-        this._moofHuntsLimit = 40;
-        this._parseChunk = this._moofHunt;
+        // console.warn('Failed to find MOOF. Starting MOOF search. Ignore this if your file stream input has ended.');
+        this._moofSearches = 0;
+        this._parseChunk = this._moofSearch;
         this._parseChunk(chunk);
         return;
       }
@@ -522,7 +531,7 @@ class Mp4Frag extends Transform {
         this._parseChunk = this._findMdat;
         this._parseChunk(chunk.slice(this._moofLength));
       } else if (this._moofLength === chunkLength) {
-        //todo verify this works
+        // todo verify this works
         this._moof = chunk;
         this._parseChunk = this._findMdat;
       } else {
@@ -534,6 +543,7 @@ class Mp4Frag extends Transform {
 
   /**
    * Search buffer for mdat.
+   * @param {Buffer} chunk
    * @private
    */
   _findMdat(chunk) {
@@ -589,35 +599,62 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * Set keyframe index.
+   * Set hvcC keyframe.
+   * @param {Buffer} chunk
    * @private
    */
-  _setKeyframe() {
-    // derived from https://github.com/video-dev/hls.js/blob/729a36d409cc78cc391b17a0680eaf743f9213fb/tools/mp4-inspect.js#L48
-    for (let i = this._moofLength + 8, nalIndex = 0, nalLength; i &lt; this._mdatLength; i += nalLength, ++nalIndex) {
-      nalLength = this._segment.readUInt32BE(i);
-      i += 4;
-      if ((this._segment[i] &amp; 0x1f) === 0x05) {
-        this._keyframe = nalIndex;
+  _setKeyFrameHVCC(chunk) {
+    let index = this._moofLength + 8;
+    const end = chunk.length - 5;
+    while (index &lt; end) {
+      const nalLength = chunk.readUInt32BE(index);
+      // check for iframe types 16, 17, 18, 19, 20, 21 (will have bit 5 set to 1, 0b00010000);
+      // if ((chunk[(index += 4)] &amp; 0x20) >> 5) { shifts bit 5 to be 1 or 0
+      if (!!(chunk[(index += 4)] &amp; 0x20)) {
+        // console.log((chunk[index] &amp; 0x7e) >> 1);
+        this._keyframe = true;
         return;
       }
+      index += nalLength;
     }
     this._allKeyframes = false;
-    this._keyframe = -1;
+    this._keyframe = false;
+  }
+
+  /**
+   * Set avcC keyframe.
+   * @see {@link https://github.com/video-dev/hls.js/blob/729a36d409cc78cc391b17a0680eaf743f9213fb/tools/mp4-inspect.js#L48}
+   * @param {Buffer} chunk
+   * @private
+   */
+  _setKeyFrameAVCC(chunk) {
+    let index = this._moofLength + 8;
+    const end = chunk.length - 5;
+    while (index &lt; end) {
+      const nalLength = chunk.readUInt32BE(index);
+      if ((chunk[(index += 4)] &amp; 0x1f) === 5) {
+        this._keyframe = true;
+        return;
+      }
+      index += nalLength;
+    }
+    this._allKeyframes = false;
+    this._keyframe = false;
   }
 
   /**
    * Set duration and timestamp.
+   * @see {@link https://github.com/video-dev/hls.js/blob/04cc5f167dac2aed4e41e493125968838cb32445/src/utils/mp4-tools.ts#L392}
+   * @param {Buffer} chunk
    * @private
    */
-  _setDurTime() {
-    // derived from https://github.com/video-dev/hls.js/blob/04cc5f167dac2aed4e41e493125968838cb32445/src/utils/mp4-tools.ts#L392
+  _setDurTime(chunk) {
     const duration = (() => {
-      const trunIndex = this._segment.indexOf(_TRUN);
+      const trunIndex = chunk.indexOf(_TRUN);
       let trunOffset = trunIndex + 4;
-      const trunFlags = this._segment.readUInt32BE(trunOffset);
+      const trunFlags = chunk.readUInt32BE(trunOffset);
       trunOffset += 4;
-      const sampleCount = this._segment.readUInt32BE(trunOffset);
+      const sampleCount = chunk.readUInt32BE(trunOffset);
       // prefer using trun sample durations
       if (trunFlags &amp; 0x000100) {
         trunOffset += 4;
@@ -626,19 +663,19 @@ class Mp4Frag extends Transform {
         const increment = 4 + (trunFlags &amp; 0x000200 &amp;&amp; 4) + (trunFlags &amp; 0x000400 &amp;&amp; 4) + (trunFlags &amp; 0x000800 &amp;&amp; 4);
         let sampleDurationSum = 0;
         for (let i = 0; i &lt; sampleCount; ++i, trunOffset += increment) {
-          sampleDurationSum += this._segment.readUInt32BE(trunOffset);
+          sampleDurationSum += chunk.readUInt32BE(trunOffset);
         }
         return sampleDurationSum / this._timescale;
       }
       // fallback to using tfhd default sample duration
-      const tfhdIndex = this._segment.indexOf(_TFHD);
+      const tfhdIndex = chunk.indexOf(_TFHD);
       let tfhdOffset = tfhdIndex + 4;
-      const tfhdFlags = this._segment.readUInt32BE(tfhdOffset);
+      const tfhdFlags = chunk.readUInt32BE(tfhdOffset);
       if (tfhdFlags &amp; 0x000008) {
         tfhdOffset += 8;
         tfhdFlags &amp; 0x000001 &amp;&amp; (tfhdOffset += 8);
         tfhdFlags &amp; 0x000002 &amp;&amp; (tfhdOffset += 4);
-        return (this._segment.readUInt32BE(tfhdOffset) * sampleCount) / this._timescale;
+        return (chunk.readUInt32BE(tfhdOffset) * sampleCount) / this._timescale;
       }
       return 0;
     })();
@@ -651,24 +688,24 @@ class Mp4Frag extends Transform {
   /**
    * Process current segment.
    * @fires Mp4Frag#segment
-   * @param chunk {Buffer}
+   * @param {Buffer} chunk
    * @private
    */
   _setSegment(chunk) {
     this._segment = chunk;
-    this._setKeyframe();
-    this._setDurTime();
+    this._setKeyFrame(chunk);
+    this._setDurTime(chunk);
     this._sequence++;
     if (this._segmentObjects) {
       this._segmentObjects.push({
-        segment: this._segment,
+        segment: chunk,
         sequence: this._sequence,
         duration: this._duration,
         timestamp: this._timestamp,
         keyframe: this._keyframe,
       });
       this._totalDuration += this._duration;
-      this._totalByteLength += this._segment.byteLength;
+      this._totalByteLength += chunk.byteLength;
       while (this._segmentObjects.length > this._segmentCount) {
         const {
           duration,
@@ -682,7 +719,7 @@ class Mp4Frag extends Transform {
         const mediaSequence = this._segmentObjects[i].sequence;
         let targetDuration = 1;
         let segments = '';
-        for (i; i &lt; this._segmentObjects.length; i++) {
+        for (i; i &lt; this._segmentObjects.length; ++i) {
           targetDuration = Math.max(targetDuration, this._segmentObjects[i].duration);
           segments += `#EXTINF:${this._segmentObjects[i].duration.toFixed(6)},\n`;
           segments += `${this._hlsPlaylistBase}${this._segmentObjects[i].sequence}.m4s\n`;
@@ -697,7 +734,7 @@ class Mp4Frag extends Transform {
       }
     } else {
       this._totalDuration = this._duration;
-      this._totalByteLength = this._initialization.byteLength + this._segment.byteLength;
+      this._totalByteLength = this._initialization.byteLength + chunk.byteLength;
     }
     if (this._readableState.pipesCount > 0) {
       this.push(this.segmentObject);
@@ -717,7 +754,114 @@ class Mp4Frag extends Transform {
   }
 
   /**
+   * @param {Buffer} chunk
+   * @returns {Boolean}
+   * @private
+   */
+  _parseCodecMP4A(chunk) {
+    const index = chunk.indexOf(_MP4A);
+    if (index !== -1) {
+      const codec = ['mp4a'];
+      const esdsIndex = chunk.indexOf(_ESDS, index);
+      // verify tags 3, 4, 5 to be in expected positions
+      if (esdsIndex !== -1 &amp;&amp; chunk[esdsIndex + 8] === 0x03 &amp;&amp; chunk[esdsIndex + 16] === 0x04 &amp;&amp; chunk[esdsIndex + 34] === 0x05) {
+        codec.push(chunk[esdsIndex + 21].toString(16));
+        codec.push(((chunk[esdsIndex + 39] &amp; 0xf8) >> 3).toString());
+        this._audioCodec = codec.join('.');
+        return true;
+      }
+      // console.warn('unexpected mp4a esds structure');
+    }
+    return false;
+  }
+
+  /**
+   * @param {Buffer} chunk
+   * @returns {Boolean}
+   * @private
+   */
+  _parseCodecAVCC(chunk) {
+    const index = chunk.indexOf(_AVCC);
+    if (index !== -1) {
+      const codec = [];
+      if (chunk.includes(_AVC1)) {
+        codec.push('avc1');
+      } else if (chunk.includes(_AVC2)) {
+        codec.push('avc2');
+      } else if (chunk.includes(_AVC3)) {
+        codec.push('avc3');
+      } else if (chunk.includes(_AVC4)) {
+        codec.push('avc4');
+      } else {
+        return false;
+      }
+      codec.push(
+        chunk
+          .slice(index + 5, index + 8)
+          .toString('hex')
+          .toUpperCase()
+      );
+      this._videoCodec = codec.join('.');
+      this._setKeyFrame = this._setKeyFrameAVCC;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @param {Buffer} chunk
+   * @returns {Boolean}
+   * @private
+   */
+  _parseCodecHVCC(chunk) {
+    const index = chunk.indexOf(_HVCC);
+    if (index !== -1) {
+      const codec = [];
+      if (chunk.includes(_HVC1)) {
+        codec.push('hvc1');
+      } else if (chunk.includes(_HEV1)) {
+        codec.push('hev1');
+      } else {
+        return false;
+      }
+      const tmpByte = chunk[index + 5];
+      const generalProfileSpace = tmpByte >> 6; // get 1st 2 bits (11000000)
+      const generalTierFlag = !!(tmpByte &amp; 0x20) ? 'H' : 'L'; // get next bit (00100000)
+      const generalProfileIdc = (tmpByte &amp; 0x1f).toString(); // get last 5 bits (00011111)
+      const generalProfileCompatibility = Mp4Frag._reverseBitsToHex(chunk.readUInt32BE(index + 6));
+      const generalConstraintIndicator = Buffer.from(chunk.slice(index + 10, index + 16).filter(byte => !!byte)).toString('hex');
+      const generalLevelIdc = chunk[index + 16].toString();
+      switch (generalProfileSpace) {
+        case 0:
+          codec.push(generalProfileIdc);
+          break;
+        case 1:
+          codec.push(`A${generalProfileIdc}`);
+          break;
+        case 2:
+          codec.push(`B${generalProfileIdc}`);
+          break;
+        case 3:
+          codec.push(`C${generalProfileIdc}`);
+          break;
+      }
+      codec.push(generalProfileCompatibility);
+      codec.push(`${generalTierFlag}${generalLevelIdc}`);
+      if (generalConstraintIndicator.length) {
+        codec.push(generalConstraintIndicator);
+      }
+      this._videoCodec = codec.join('.');
+      this._setKeyFrame = this._setKeyFrameHVCC;
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Required for stream transform.
+   * @param {Buffer} chunk
+   * @param {String} encoding
+   * @param {TransformCallback} callback
    * @private
    */
   _transform(chunk, encoding, callback) {
@@ -727,6 +871,7 @@ class Mp4Frag extends Transform {
 
   /**
    * Run cleanup when unpiped.
+   * @param {TransformCallback} callback
    * @private
    */
   _flush(callback) {
@@ -735,26 +880,46 @@ class Mp4Frag extends Transform {
   }
 
   /**
-   * @param {*|Number|String} number
+   * Validate number is in range.
+   * @param {*} n
    * @param {Number} def
    * @param {Number} min
    * @param {Number} max
-   * @return {Number}
+   * @returns {Number}
    * @private
+   * @static
    */
-  static _validateNumber(number, def, min, max) {
-    number = Number.parseInt(number);
-    return isNaN(number) ? def : number &lt; min ? min : number > max ? max : number;
+  static _validateNumber(n, def, min, max) {
+    n = Number.parseInt(n);
+    return isNaN(n) ? def : n &lt; min ? min : n > max ? max : n;
   }
 
   /**
-   * @param {*|Boolean} bool
+   * Validate boolean value.
+   * @param {*} bool
    * @param {Boolean} def
-   * @return {Boolean}
+   * @returns {Boolean}
    * @private
+   * @static
    */
   static _validateBoolean(bool, def) {
     return typeof bool === 'boolean' ? bool : def;
+  }
+
+  /**
+   * Reverse bits and convert to hexadecimal.
+   * @see {@link http://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel}
+   * @param {Number} n - unsigned 32 bit integer
+   * @returns {String} - bit reversed hex string
+   * @private
+   * @static
+   */
+  static _reverseBitsToHex(n) {
+    n = ((n >> 1) &amp; 0x55555555) | ((n &amp; 0x55555555) &lt;&lt; 1);
+    n = ((n >> 2) &amp; 0x33333333) | ((n &amp; 0x33333333) &lt;&lt; 2);
+    n = ((n >> 4) &amp; 0x0f0f0f0f) | ((n &amp; 0x0f0f0f0f) &lt;&lt; 4);
+    n = ((n >> 8) &amp; 0x00ff00ff) | ((n &amp; 0x00ff00ff) &lt;&lt; 8);
+    return ((n >> 16) | (n &lt;&lt; 16)).toString(16);
   }
 }
 
@@ -775,7 +940,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Thu Dec 30 2021 19:52:06 GMT-0600 (Central Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Sat Feb 12 2022 10:54:55 GMT-0600 (Central Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
