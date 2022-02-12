@@ -74,12 +74,12 @@ const _MOOF_SEARCH_LIMIT = 50; // number of allowed attempts to find missing moo
 class Mp4Frag extends Transform {
   /**
    * @constructor
-   * @param {Object} [options] - Configuration options.
-   * @param {String} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
-   * @param {Number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
-   * @param {Number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
-   * @param {Boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
-   * @param {Number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
+   * @param {object} [options] - Configuration options.
+   * @param {string} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
+   * @param {number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
+   * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
+   * @param {boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
+   * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
@@ -106,11 +106,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} audioCodec
-   * - Returns the audio codec information as a &lt;b>String&lt;/b>.
+   * @property {?string} audioCodec
+   * - Returns the audio codec information as a &lt;b>string&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String|null}
+   * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {?string}
    */
   get audioCodec() {
     return this._audioCodec || null;
@@ -118,11 +118,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} videoCodec
-   * - Returns the video codec information as a &lt;b>String&lt;/b>.
+   * @property {?string} videoCodec
+   * - Returns the video codec information as a &lt;b>string&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String|null}
+   * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {?string}
    */
   get videoCodec() {
     return this._videoCodec || null;
@@ -130,11 +130,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} mime
-   * - Returns the mime type information as a &lt;b>String&lt;/b>.
+   * @property {?string} mime
+   * - Returns the mime type information as a &lt;b>string&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String|null}
+   * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {?string}
    */
   get mime() {
     return this._mime || null;
@@ -142,11 +142,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Buffer|null} initialization
+   * @property {?Buffer} initialization
    * - Returns the Mp4 initialization fragment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {Buffer|null}
+   * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {?Buffer}
    */
   get initialization() {
     return this._initialization || null;
@@ -154,11 +154,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Buffer|null} segment
+   * @property {?Buffer} segment
    * - Returns the latest Mp4 segment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Buffer|null}
+   * - Returns &lt;b>null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * @returns {?Buffer}
    */
   get segment() {
     return this._segment || null;
@@ -166,13 +166,13 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Object} segmentObject
-   * - Returns the latest Mp4 segment as an &lt;b>Object&lt;/b>.
+   * @property {object} segmentObject
+   * - Returns the latest Mp4 segment as an &lt;b>object&lt;/b>.
    * &lt;br/>
    *  - &lt;b>&lt;code>{segment, sequence, duration, timestamp, keyframe}&lt;/code>&lt;/b>
    * &lt;br/>
    * - Returns &lt;b>{segment: null, sequence: -1, duration: -1; timestamp: -1, keyframe: -1}&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Object}
+   * @returns {object}
    */
   get segmentObject() {
     return {
@@ -186,11 +186,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} timestamp
+   * @property {number} timestamp
    * - Returns the timestamp of the latest Mp4 segment as an &lt;b>Integer&lt;/b>(&lt;i>milliseconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Number}
+   * @returns {number}
    */
   get timestamp() {
     return this._timestamp || -1;
@@ -198,11 +198,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} duration
+   * @property {number} duration
    * - Returns the duration of latest Mp4 segment as a &lt;b>Float&lt;/b>(&lt;i>seconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Number}
+   * @returns {number}
    */
   get duration() {
     return this._duration || -1;
@@ -210,11 +210,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} totalDuration
+   * @property {number} totalDuration
    * - Returns the total duration of all Mp4 segments as a &lt;b>Float&lt;/b>(&lt;i>seconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Number}
+   * @returns {number}
    */
   get totalDuration() {
     return this._totalDuration || -1;
@@ -222,11 +222,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} totalByteLength
+   * @property {number} totalByteLength
    * - Returns the total byte length of the Mp4 initialization and all Mp4 segments as ant &lt;b>Int&lt;/b>(&lt;i>bytes&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {Number}
+   * @returns {number}
    */
   get totalByteLength() {
     return this._totalByteLength || -1;
@@ -234,11 +234,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {String|null} m3u8
+   * @property {?string} m3u8
    * - Returns the fmp4 HLS m3u8 playlist as a &lt;b>String&lt;/b>.
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
-   * @returns {String|null}
+   * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
+   * @returns {?string}
    */
   get m3u8() {
     return this._m3u8 || null;
@@ -246,11 +246,11 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Number} sequence
+   * @property {number} sequence
    * - Returns the sequence of the latest Mp4 segment as an &lt;b>Integer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Number}
+   * @returns {number}
    */
   get sequence() {
     return Number.isInteger(this._sequence) ? this._sequence : -1;
@@ -282,26 +282,26 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
-   * @property {Array|null} segmentObjects
+   * @property {?Array} segmentObjects
    * - Returns the Mp4 segments as an &lt;b>Array&lt;/b> of &lt;b>Objects&lt;/b>
    * &lt;br/>
    * - &lt;b>&lt;code>[{segment, sequence, duration, timestamp, keyframe},...]&lt;/code>&lt;/b>
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
-   * @returns {Array|null}
+   * - Returns &lt;b>null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * @returns {?Array}
    */
   get segmentObjects() {
     return this._segmentObjects &amp;&amp; this._segmentObjects.length ? this._segmentObjects : null;
   }
 
   /**
-   * @param {Number|String} sequence - sequence number
-   * @returns {Object|null}
+   * @param {number|string} sequence - sequence number
+   * @returns {?object}
    * - Returns the Mp4 segment that corresponds to the numbered sequence as an &lt;b>Object&lt;/b>.
    * &lt;br/>
    * - &lt;b>&lt;code>{segment, sequence, duration, timestamp, keyframe}&lt;/code>&lt;/b>
    * &lt;br/>
-   * - Returns &lt;b>Null&lt;/b> if there is no segment that corresponds to sequence number.
+   * - Returns &lt;b>null&lt;/b> if there is no segment that corresponds to sequence number.
    */
   getSegmentObject(sequence) {
     sequence = Number.parseInt(sequence);
@@ -351,6 +351,7 @@ class Mp4Frag extends Transform {
 
   /**
    * Search buffer for ftyp.
+   * @param {Buffer} chunk
    * @private
    */
   _findFtyp(chunk) {
@@ -810,7 +811,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @param {Buffer} chunk
-   * @returns {Boolean}
+   * @returns {boolean}
    * @private
    */
   _parseCodecHVCC(chunk) {
@@ -860,7 +861,7 @@ class Mp4Frag extends Transform {
   /**
    * Required for stream transform.
    * @param {Buffer} chunk
-   * @param {String} encoding
+   * @param {string} encoding
    * @param {TransformCallback} callback
    * @private
    */
@@ -882,10 +883,10 @@ class Mp4Frag extends Transform {
   /**
    * Validate number is in range.
    * @param {*} n
-   * @param {Number} def
-   * @param {Number} min
-   * @param {Number} max
-   * @returns {Number}
+   * @param {number} def
+   * @param {number} min
+   * @param {number} max
+   * @returns {number}
    * @private
    * @static
    */
@@ -897,8 +898,8 @@ class Mp4Frag extends Transform {
   /**
    * Validate boolean value.
    * @param {*} bool
-   * @param {Boolean} def
-   * @returns {Boolean}
+   * @param {boolean} def
+   * @returns {boolean}
    * @private
    * @static
    */
@@ -909,8 +910,8 @@ class Mp4Frag extends Transform {
   /**
    * Reverse bits and convert to hexadecimal.
    * @see {@link http://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel}
-   * @param {Number} n - unsigned 32 bit integer
-   * @returns {String} - bit reversed hex string
+   * @param {number} n - unsigned 32 bit integer
+   * @returns {string} - bit reversed hex string
    * @private
    * @static
    */
@@ -940,7 +941,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Sat Feb 12 2022 10:54:55 GMT-0600 (Central Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Sat Feb 12 2022 11:12:26 GMT-0600 (Central Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
