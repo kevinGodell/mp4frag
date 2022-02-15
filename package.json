@@ -4,12 +4,16 @@
   "description": "A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8",
+    "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8 && npm run codecs",
     "preversion": "npm test",
     "postversion": "npm run doc",
     "pack": "npm --verbose pack",
     "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
-    "lint": "./node_modules/.bin/eslint --fix ."
+    "lint": "./node_modules/.bin/eslint --fix .",
+    "aac": "node tests/aac/testList",
+    "avc": "node tests/avc/testList",
+    "hevc": "node tests/hevc/testList",
+    "codecs": "npm run aac && npm run avc && npm run hevc"
   },
   "repository": {
     "type": "git",
@@ -43,7 +47,7 @@
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
-    "jsdoc": "^3.6.7",
+    "jsdoc": "^3.6.10",
     "prettier": "^2.5.1"
   },
   "files": [
@@ -51,5 +55,8 @@
     "index.js",
     "LICENSE",
     "README.md"
-  ]
+  ],
+  "engines": {
+    "node": ">=8"
+  }
 }
