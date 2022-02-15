@@ -49,24 +49,24 @@ const params = [
 
 const mp4frag = new Mp4Frag({ hlsPlaylistBase: 'test_Name' });
 
-mp4frag.once('initialized', (data) => {
+mp4frag.once('initialized', data => {
   console.log('init');
   assert(mp4frag.m3u8 === `#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:1\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-MAP:URI="init-test_Name.mp4"\n`, 'Unexpected m3u8 data');
 });
 
-mp4frag.on('segment', (data) => {
+mp4frag.on('segment', data => {
   console.log('seg');
   counter++;
 });
 
-mp4frag.once('error', (data) => {
+mp4frag.once('error', data => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn('avconv', params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', (error) => {
+ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
 });
 

@@ -68,23 +68,23 @@ const hlsBase = 'some_HlsBase';
 
 const mp4frag = new Mp4Frag({ hlsPlaylistBase: hlsBase, hlsPlaylistSize: 5 });
 
-mp4frag.once('initialized', (data) => {
+mp4frag.once('initialized', data => {
   assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
 });
 
-mp4frag.on('segment', (data) => {
+mp4frag.on('segment', data => {
   counter++;
   //console.log(mp4frag.sequence, data.length, mp4frag.segment.length, mp4frag.getHlsSegment(mp4frag.sequence).length, mp4frag.getHlsNamedSegment(`${hlsBase}${mp4frag.sequence}.m4s`).length);
 });
 
-mp4frag.once('error', (err) => {
+mp4frag.once('error', err => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', err.message);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', (error) => {
+ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
 });
 

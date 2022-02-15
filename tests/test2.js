@@ -69,24 +69,24 @@ const mp4frag = new Mp4Frag();
 assert(mp4frag.totalDuration === -1);
 assert(mp4frag.totalByteLength === -1);
 
-mp4frag.once('initialized', (data) => {
+mp4frag.once('initialized', data => {
   assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
   assert(mp4frag.totalDuration === -1);
   assert(mp4frag.totalByteLength === 801);
 });
 
-mp4frag.on('segment', (data) => {
+mp4frag.on('segment', data => {
   counter++;
 });
 
-mp4frag.once('error', (data) => {
+mp4frag.once('error', data => {
   //error is expected when ffmpeg exits without unpiping
   console.log('mp4frag error', data);
 });
 
 const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
 
-ffmpeg.once('error', (error) => {
+ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
 });
 
