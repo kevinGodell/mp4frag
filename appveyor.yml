@@ -18,7 +18,7 @@ test_script:
   - node --version
   - npm --version
   - npm test
-  - npm run aac
-  - npm run avc
-  - npm run hevc
+# - npm run aac
+# - npm run avc
+# - npm run hevc
 build: false

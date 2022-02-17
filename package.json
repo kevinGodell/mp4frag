@@ -46,6 +46,8 @@
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
+    "ffmpeg-for-homebridge": "^0.0.9",
+    "ffmpeg-static": "^4.4.1",
     "jsdoc": "^3.6.10",
     "prettier": "^2.5.1"
   },
