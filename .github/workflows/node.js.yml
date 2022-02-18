@@ -28,9 +28,9 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-#     - run: npm run aac
-#     - run: npm run avc
-#     - run: npm run hevc
+     - run: npm run aac
+     - run: npm run avc
+     - run: npm run hevc
 
   windows:
 
@@ -50,9 +50,9 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-#     - run: npm run aac
-#     - run: npm run avc
-#     - run: npm run hevc
+     - run: npm run aac
+     - run: npm run avc
+     - run: npm run hevc
 
   macos:
 
@@ -72,6 +72,6 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-#     - run: npm run aac
-#     - run: npm run avc
-#     - run: npm run hevc
+     - run: npm run aac
+     - run: npm run avc
+     - run: npm run hevc
