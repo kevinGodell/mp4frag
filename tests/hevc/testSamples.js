@@ -10,34 +10,35 @@ const Mp4Frag = require('../../index');
 
 const list = require('./list.json');
 
-const filename = 'pipe:1';
-
 (async () => {
-  for (const item of list) {
-    const [videoCodec] = item.split(',');
+  try {
+    for (const item of list) {
+      const [videoCodec] = item.split(',');
 
-    const filename = `${__dirname}/samples/${videoCodec}-init.mp4`;
+      const filename = `${__dirname}/samples/${videoCodec}-init.mp4`;
 
-    const file = readFileSync(filename);
+      const file = readFileSync(filename);
 
-    const mp4frag = new Mp4Frag();
+      const mp4frag = new Mp4Frag();
 
-    await new Promise((resolve, reject) => {
-      mp4frag.once('error', error => {
-        console.error({ error });
+      await new Promise((resolve, reject) => {
+        mp4frag.once('error', error => {
+          reject(error);
+        });
 
-        reject(error);
+        mp4frag.once('initialized', ({ mime }) => {
+          console.log({ mime });
+
+          assert(videoCodec === mp4frag.videoCodec, `expected: ${videoCodec}, received: ${mp4frag.videoCodec}`);
+
+          resolve();
+        });
+
+        mp4frag.write(file);
       });
-
-      mp4frag.once('initialized', ({ mime }) => {
-        console.log({ mime });
-        assert(videoCodec === mp4frag.videoCodec, `${videoCodec} vs ${mp4frag.videoCodec}`);
-
-        resolve();
-      });
-
-      mp4frag.write(file);
-    });
+    }
+  } catch (error) {
+    console.error(error.toString());
   }
 
   console.timeEnd(__filename.split('/').pop());
