@@ -8,9 +8,9 @@ const levels = ['10', '20', '21', '30', '31', '40', '41', '50', '51', '52', '60'
 
 const pixFmts = ['yuv420p', 'yuv422p', 'yuv444p', 'yuv420p10le', 'yuv444p10le', 'yuv420p12le', 'yuv422p12le', 'yuv444p12le'];
 
-const keyints = [1, 2];
+const keyints = [2, 1];
 
-const noHighTiers = [0, 1];
+const noHighTiers = [1, 0];
 
 module.exports = {
   tags,
