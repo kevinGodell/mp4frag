@@ -20,5 +20,5 @@ test_script:
   - npm test
   - npm run aac
   - npm run avc
-  - npm run samples
+  - npm run hevc
 build: false
