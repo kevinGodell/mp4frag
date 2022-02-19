@@ -10,8 +10,8 @@
     "pack": "npm --verbose pack",
     "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
     "lint": "./node_modules/.bin/eslint --fix .",
-    "aac": "node tests/aac/testList",
-    "avc": "node tests/avc/testList",
+    "aac": "node tests/aac/testSamples",
+    "avc": "node tests/avc/testSamples",
     "hevc": "node tests/hevc/testSamples"
   },
   "repository": {
