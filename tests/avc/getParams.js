@@ -1,6 +1,6 @@
 'use strict';
 
-const getParams = ({ profile, level, pixFmt, keyint, filename }) => {
+const getParams = ({ profile, level, pixFmt, keyint }) => {
   return [
     '-hide_banner',
     '-y',
@@ -28,7 +28,7 @@ const getParams = ({ profile, level, pixFmt, keyint, filename }) => {
     'mp4',
     '-movflags',
     '+frag_keyframe+empty_moov+default_base_moof',
-    filename,
+    'pipe:1',
   ];
 };
 
