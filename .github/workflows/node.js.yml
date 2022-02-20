@@ -5,7 +5,7 @@ name: build
 
 on:
   push:
-    branches: [ master, h.265 ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
