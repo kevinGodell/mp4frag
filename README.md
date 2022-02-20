@@ -17,7 +17,12 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 * [node-red-contrib-mp4frag](https://github.com/kevinGodell/node-red-contrib-mp4frag)
 
 ### Known Limitations:
-* only supports fragmented mp4 video encoded as h.264
+* only supports fragmented mp4 video encoded with h.264, h.265, and aac
+
+# Changes v0.5.4 => v0.6.0
+* dropping support for node.js < 10
+* h.265 codec parsing
+* [keyframe](https://kevingodell.github.io/mp4frag/Mp4Frag.html#keyframe) now returns a boolean
 
 # Changes v0.5.2 => v0.5.4
 * [getSegmentObject](https://kevingodell.github.io/mp4frag/Mp4Frag.html#getSegmentObject) internal improvements
@@ -59,14 +64,14 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 
 # Changes v0.2.0 => v0.3.0
 
-### Constructor options changed ***---> BREAKING  <---***
+### Constructor options changed ***---> BREAKING <---***
 
 * `hlsBase` => `hlsPlaylistBase` _string_, accepts `_`, `a-z`, and `A-Z`
 * `hlsSize` => `hlsPlaylistSize` _integer_, ranges from `2` to `20`, defaults to `4`
 * `hlsInit` => `hlsPlaylistInit` _boolean_, defaults to `true`
 * `bufferListSize` => `segmentCount` _integer_, ranges from `2` to `30`, defaults to `2` 
 
-### Segment event changed ***---> BREAKING  <---***
+### Segment event changed ***---> BREAKING <---***
 
 ```js
 mp4frag.on('segment', data => {
@@ -190,22 +195,22 @@ ffmpeg.stdio[1].pipe(mp4frag);
 ```javascript
 const fs = require('fs');
 
-const fileName = `${Date.now()}.mp4`;
-
-const writeStream = fs.createWriteStream(fileName);
-
 const { initialization, segmentObjects } = mp4frag;
 
 if (initialization && segmentObjects) {
+  const fileName = `${Date.now()}.mp4`;
+
+  const writeStream = fs.createWriteStream(fileName);
+  
   // write the initialization fragment
-  writeStream._write(initialization);
+  writeStream.write(initialization);
 
   // write the media segments
   segmentObjects.forEach(({segment}) => {
     writeStream.write(segment);
   });
+
+  // end
+  writeStream.end();
 }
-    
-// end
-writeStream.end();
 ```
