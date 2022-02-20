@@ -143,7 +143,7 @@ class Mp4Frag extends Transform {
    * <br/>
    *  - <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
    * <br/>
-   * - Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1, keyframe: -1}</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
+   * - Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1, keyframe: true}</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
    * @returns {object}
    */
   get segmentObject() {
@@ -234,6 +234,8 @@ class Mp4Frag extends Transform {
    * - Returns a boolean indicating if the current segment contains a keyframe.
    * <br/>
    * - Returns <b>false</b> if the current segment does not contain a keyframe.
+   * <br/>
+   * - Returns <b>true</b> if segment only contains audio.
    * @returns {boolean}
    */
   get keyframe() {
@@ -581,10 +583,8 @@ class Mp4Frag extends Transform {
     const end = chunk.length - 5;
     while (index < end) {
       const nalLength = chunk.readUInt32BE(index);
-      // check for iframe types 16, 17, 18, 19, 20, 21 (will have bit 5 set to 1, 0b00010000);
-      // if ((chunk[(index += 4)] & 0x20) >> 5) { shifts bit 5 to be 1 or 0
-      if (!!(chunk[(index += 4)] & 0x20)) {
-        // console.log((chunk[index] & 0x7e) >> 1);
+      // simplify check for iframe nal types 16, 17, 18, 19, 20, 21; (chunk[(index += 4)] & 0x20) >> 1
+      if ((chunk[(index += 4)] & 0x20) === 32) {
         this._keyframe = true;
         return;
       }
