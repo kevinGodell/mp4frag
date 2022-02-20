@@ -95,8 +95,8 @@ let total = profiles.length * levels.length * pixFmts.length * keyints.length;
                 });
 
                 /*mp4frag.once('segment', data => {
-                      console.log(data);
-                    });*/
+                  console.log(data);
+                });*/
 
                 mp4frag.once('initialized', () => {
                   const { videoCodec } = mp4frag;

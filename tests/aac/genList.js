@@ -60,8 +60,8 @@ let total = profiles.length;
           });
 
           /*mp4frag.once('segment', data => {
-                      console.log(data);
-                    });*/
+            console.log(data);
+          });*/
 
           mp4frag.once('initialized', () => {
             const { audioCodec } = mp4frag;
