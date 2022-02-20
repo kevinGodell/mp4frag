@@ -1,0 +1,10 @@
+[
+ "mp4a.40.1,aac_main",
+ "mp4a.40.2,aac_low",
+ "mp4a.40.3,aac_ssr",
+ "mp4a.40.4,mpeg2_aac_he",
+ "mp4a.40.5,aac_he",
+ "mp4a.40.7,aac_eld",
+ "mp4a.40.23,aac_ld",
+ "mp4a.40.29,aac_he_v2"
+]

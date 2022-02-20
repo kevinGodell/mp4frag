@@ -8,17 +8,17 @@ const { createWriteStream } = require('fs');
 
 const mp4frag = new Mp4Frag({ segmentCount: 10 });
 
-mp4frag.on('initialized', (data) => {
+mp4frag.on('initialized', data => {
   console.log('---- initialized ----');
   console.log(data);
 });
 
-mp4frag.on('segment', (data) => {
+mp4frag.on('segment', data => {
   console.log('---- segment ----');
   console.log(data);
 });
 
-mp4frag.on('error', (err) => {
+mp4frag.on('error', err => {
   console.error(err);
 });
 
@@ -34,7 +34,7 @@ const writeMp4 = () => {
 
     writeStream.write(initialization);
 
-    segmentObjects.forEach((segmentObject) => {
+    segmentObjects.forEach(segmentObject => {
       const { segment } = segmentObject;
 
       writeStream.write(segment);
@@ -77,7 +77,7 @@ const ffmpeg = spawn(ffmpegPath, [
   'pipe:1',
 ]);
 
-ffmpeg.stderr.on('data', (data) => {
+ffmpeg.stderr.on('data', data => {
   console.log(data.toString());
 });
 

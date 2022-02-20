@@ -9,7 +9,10 @@
     "postversion": "npm run doc",
     "pack": "npm --verbose pack",
     "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
-    "lint": "./node_modules/.bin/eslint --fix ."
+    "lint": "./node_modules/.bin/eslint --fix .",
+    "aac": "node tests/aac/testSamples",
+    "avc": "node tests/avc/testSamples",
+    "hevc": "node tests/hevc/testSamples"
   },
   "repository": {
     "type": "git",
@@ -43,7 +46,8 @@
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.1",
-    "jsdoc": "^3.6.7",
+    "ffmpeg-static": "^4.4.1",
+    "jsdoc": "^3.6.10",
     "prettier": "^2.5.1"
   },
   "files": [
@@ -51,5 +55,8 @@
     "index.js",
     "LICENSE",
     "README.md"
-  ]
+  ],
+  "engines": {
+    "node": ">=10"
+  }
 }
