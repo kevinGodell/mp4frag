@@ -78,54 +78,51 @@ let total = profiles.length * levels.length * pixFmts.length * keyints.length;
 
 (async () => {
   try {
-      for (const profile of profiles) {
-        for (const level of levels) {
-          for (const pixFmt of pixFmts) {
-            for (const keyint of keyints) {
+    for (const profile of profiles) {
+      for (const level of levels) {
+        for (const pixFmt of pixFmts) {
+          for (const keyint of keyints) {
+            const params = getParams({ profile, level, pixFmt, keyint });
 
-                const params = getParams({ profile, level, pixFmt, keyint });
+            const ffmpeg = spawnSync(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'pipe'] });
 
-                const ffmpeg = spawnSync(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'pipe'] });
+            if (ffmpeg.status === 0) {
+              const mp4frag = new Mp4Frag();
 
-                if (ffmpeg.status === 0) {
-                  const mp4frag = new Mp4Frag();
+              await new Promise((resolve, reject) => {
+                mp4frag.once('error', error => {
+                  reject(error);
+                });
 
-                  await new Promise((resolve, reject) => {
-                    mp4frag.once('error', error => {
-                      reject(error);
-                    });
-
-                    /*mp4frag.once('segment', data => {
+                /*mp4frag.once('segment', data => {
                       console.log(data);
                     });*/
 
-                    mp4frag.once('initialized', () => {
-                      const { videoCodec } = mp4frag;
+                mp4frag.once('initialized', () => {
+                  const { videoCodec } = mp4frag;
 
-                      if (videoCodecSet.has(videoCodec) === false) {
-                        videoCodecSet.add(videoCodec);
+                  if (videoCodecSet.has(videoCodec) === false) {
+                    videoCodecSet.add(videoCodec);
 
-                        results.push([videoCodec, profile, level, pixFmt, keyint].join(','));
-                      }
+                    results.push([videoCodec, profile, level, pixFmt, keyint].join(','));
+                  }
 
-                      resolve();
-                    });
+                  resolve();
+                });
 
-                    mp4frag.write(ffmpeg.stdout);
-                  });
-                } else {
-                  console.warn(`profile:${profile} level:${level} pixFmt:${pixFmt} keyint:${keyint}`);
+                mp4frag.write(ffmpeg.stdout);
+              });
+            } else {
+              console.warn(`profile:${profile} level:${level} pixFmt:${pixFmt} keyint:${keyint}`);
 
-                  console.warn(ffmpeg.stderr.toString());
-                }
-
-                console.log(--total, videoCodecSet.size);
-
+              console.warn(ffmpeg.stderr.toString());
             }
+
+            console.log(--total, videoCodecSet.size);
           }
         }
       }
-
+    }
 
     const data = JSON.stringify(results.sort(), null, 1);
 

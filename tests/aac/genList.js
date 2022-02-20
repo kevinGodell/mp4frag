@@ -46,49 +46,45 @@ let total = profiles.length;
 
 (async () => {
   try {
-      for (const profile of profiles) {
+    for (const profile of profiles) {
+      const params = getParams({ profile });
 
-                const params = getParams({ profile });
+      const ffmpeg = spawnSync(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'pipe'] });
 
-                const ffmpeg = spawnSync(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'pipe'] });
+      if (ffmpeg.status === 0) {
+        const mp4frag = new Mp4Frag();
 
-                if (ffmpeg.status === 0) {
-                  const mp4frag = new Mp4Frag();
+        await new Promise((resolve, reject) => {
+          mp4frag.once('error', error => {
+            reject(error);
+          });
 
-                  await new Promise((resolve, reject) => {
-                    mp4frag.once('error', error => {
-                      reject(error);
-                    });
-
-                    /*mp4frag.once('segment', data => {
+          /*mp4frag.once('segment', data => {
                       console.log(data);
                     });*/
 
-                    mp4frag.once('initialized', () => {
-                      const { audioCodec } = mp4frag;
+          mp4frag.once('initialized', () => {
+            const { audioCodec } = mp4frag;
 
-                      if (audioCodecSet.has(audioCodec) === false) {
-                        audioCodecSet.add(audioCodec);
+            if (audioCodecSet.has(audioCodec) === false) {
+              audioCodecSet.add(audioCodec);
 
-                        results.push([audioCodec, profile].join(','));
-                      }
+              results.push([audioCodec, profile].join(','));
+            }
 
-                      resolve();
-                    });
+            resolve();
+          });
 
-                    mp4frag.write(ffmpeg.stdout);
-                  });
-                } else {
-                  console.warn(`profile:${profile}`);
+          mp4frag.write(ffmpeg.stdout);
+        });
+      } else {
+        console.warn(`profile:${profile}`);
 
-                  console.warn(ffmpeg.stderr.toString());
-                }
-
-                console.log(--total, audioCodecSet.size);
-
-
+        console.warn(ffmpeg.stderr.toString());
       }
 
+      console.log(--total, audioCodecSet.size);
+    }
 
     const data = JSON.stringify(results.sort(sort), null, 1);
 
