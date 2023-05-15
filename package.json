@@ -50,12 +50,12 @@
   "homepage": "https://github.com/kevinGodell/mp4frag#readme",
   "devDependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^3.4.1",
-    "ffmpeg-static": "^4.4.1",
-    "jsdoc": "^3.6.10",
-    "prettier": "^2.5.1"
+    "eslint": "^8.40.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "ffmpeg-static": "^5.1.0",
+    "jsdoc": "^4.0.2",
+    "prettier": "^2.8.8"
   },
   "files": [
     "package.json",
