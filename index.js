@@ -95,7 +95,7 @@ class Mp4Frag extends Transform {
    * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
    * @param {boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
    * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
-   * @param {number} [options.pool = 0] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
+   * @param {number} [options.pool = 0] - Experimental buffer pool.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
@@ -136,6 +136,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} audioCodec
    * - Returns the audio codec information as a <b>string</b>.
    * <br/>
    * - Returns <b>null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -147,6 +148,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} videoCodec
    * - Returns the video codec information as a <b>string</b>.
    * <br/>
    * - Returns <b>null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -158,6 +160,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} mime
    * - Returns the mime type information as a <b>string</b>.
    * <br/>
    * - Returns <b>null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -169,6 +172,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} timescale
    * - Returns the timescale information as a <b>number</b>.
    * <br/>
    * - Returns <b>-1</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -180,6 +184,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Buffer|null} initialization
    * - Returns the Mp4 initialization fragment as a <b>Buffer</b>.
    * <br/>
    * - Returns <b>null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -191,6 +196,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Buffer|null} segment
    * - Returns the latest Mp4 segment as a <b>Buffer</b>.
    * <br/>
    * - Returns <b>null</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -202,6 +208,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {object} segmentObject
    * - Returns the latest Mp4 segment as an <b>object</b>.
    * <br/>
    *  - <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
@@ -221,6 +228,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} timestamp
    * - Returns the timestamp of the latest Mp4 segment as an <b>Integer</b>(<i>milliseconds</i>).
    * <br/>
    * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -232,6 +240,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} duration
    * - Returns the duration of latest Mp4 segment as a <b>Float</b>(<i>seconds</i>).
    * <br/>
    * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -243,6 +252,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} totalDuration
    * - Returns the total duration of all Mp4 segments as a <b>Float</b>(<i>seconds</i>).
    * <br/>
    * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -254,6 +264,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} totalByteLength
    * - Returns the total byte length of the Mp4 initialization and all Mp4 segments as ant <b>Integer</b>(<i>bytes</i>).
    * <br/>
    * - Returns <b>-1</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -265,6 +276,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} m3u8
    * - Returns the fmp4 HLS m3u8 playlist as a <b>string</b>.
    * <br/>
    * - Returns <b>null</b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -276,6 +288,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} sequence
    * - Returns the sequence of the latest Mp4 segment as an <b>Integer</b>.
    * <br/>
    * - Returns <b>-1</b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -287,6 +300,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {boolean} keyframe
    * - Returns a boolean indicating if the current segment contains a keyframe.
    * <br/>
    * - Returns <b>false</b> if the current segment does not contain a keyframe.
@@ -300,6 +314,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {boolean} allKeyframes
    * - Returns a boolean indicating if all segments contain a keyframe.
    * <br/>
    * - Returns <b>false</b> if any segments do not contain a keyframe.
@@ -311,6 +326,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Array|null} segmentObjects
    * - Returns the Mp4 segments as an <b>Array</b> of <b>objects</b>
    * <br/>
    * - <b><code>[{segment, sequence, duration, timestamp, keyframe},...]</code></b>
