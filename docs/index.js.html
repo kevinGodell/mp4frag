@@ -123,7 +123,7 @@ class Mp4Frag extends Transform {
    * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
    * @param {boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
    * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
-   * @param {number} [options.pool = 0] - Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
+   * @param {number} [options.pool = 0] - Experimental buffer pool.
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
@@ -164,6 +164,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} audioCodec
    * - Returns the audio codec information as a &lt;b>string&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -175,6 +176,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} videoCodec
    * - Returns the video codec information as a &lt;b>string&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -186,6 +188,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} mime
    * - Returns the mime type information as a &lt;b>string&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -197,6 +200,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} timescale
    * - Returns the timescale information as a &lt;b>number&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -208,6 +212,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Buffer|null} initialization
    * - Returns the Mp4 initialization fragment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -219,6 +224,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Buffer|null} segment
    * - Returns the latest Mp4 segment as a &lt;b>Buffer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -230,6 +236,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {object} segmentObject
    * - Returns the latest Mp4 segment as an &lt;b>object&lt;/b>.
    * &lt;br/>
    *  - &lt;b>&lt;code>{segment, sequence, duration, timestamp, keyframe}&lt;/code>&lt;/b>
@@ -249,6 +256,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} timestamp
    * - Returns the timestamp of the latest Mp4 segment as an &lt;b>Integer&lt;/b>(&lt;i>milliseconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -260,6 +268,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} duration
    * - Returns the duration of latest Mp4 segment as a &lt;b>Float&lt;/b>(&lt;i>seconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -271,6 +280,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} totalDuration
    * - Returns the total duration of all Mp4 segments as a &lt;b>Float&lt;/b>(&lt;i>seconds&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -282,6 +292,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} totalByteLength
    * - Returns the total byte length of the Mp4 initialization and all Mp4 segments as ant &lt;b>Integer&lt;/b>(&lt;i>bytes&lt;/i>).
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -293,6 +304,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {string|null} m3u8
    * - Returns the fmp4 HLS m3u8 playlist as a &lt;b>string&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>null&lt;/b> if requested before [initialized event]{@link Mp4Frag#event:initialized}.
@@ -304,6 +316,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {number} sequence
    * - Returns the sequence of the latest Mp4 segment as an &lt;b>Integer&lt;/b>.
    * &lt;br/>
    * - Returns &lt;b>-1&lt;/b> if requested before first [segment event]{@link Mp4Frag#event:segment}.
@@ -315,6 +328,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {boolean} keyframe
    * - Returns a boolean indicating if the current segment contains a keyframe.
    * &lt;br/>
    * - Returns &lt;b>false&lt;/b> if the current segment does not contain a keyframe.
@@ -328,6 +342,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {boolean} allKeyframes
    * - Returns a boolean indicating if all segments contain a keyframe.
    * &lt;br/>
    * - Returns &lt;b>false&lt;/b> if any segments do not contain a keyframe.
@@ -339,6 +354,7 @@ class Mp4Frag extends Transform {
 
   /**
    * @readonly
+   * @property {Array|null} segmentObjects
    * - Returns the Mp4 segments as an &lt;b>Array&lt;/b> of &lt;b>objects&lt;/b>
    * &lt;br/>
    * - &lt;b>&lt;code>[{segment, sequence, duration, timestamp, keyframe},...]&lt;/code>&lt;/b>
@@ -1085,7 +1101,7 @@ module.exports = Mp4Frag;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun May 14 2023 20:09:37 GMT-0500 (Central Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun May 14 2023 20:28:34 GMT-0500 (Central Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
