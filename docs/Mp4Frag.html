@@ -139,45 +139,6 @@
 
         <tr>
             
-                <td class="name"><code>readableObjectMode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    false
-                
-                </td>
-            
-
-            <td class="description last">If true, segments will be piped out as an object instead of a Buffer.</td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>hlsPlaylistBase</code></td>
             
 
@@ -368,6 +329,45 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>pool</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    0
+                
+                </td>
+            
+
+            <td class="description last">Number of segments to keep in memory. Has no effect if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -412,7 +412,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line58">line 58</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line101">line 101</a>
     </li></ul></dd>
     
 
@@ -485,60 +485,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>allKeyframes</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns a boolean indicating if all segments contain a keyframe.
-<br/>
-- Returns <b>false</b> if any segments do not contain a keyframe.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -568,7 +514,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line258">line 258</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line308">line 308</a>
     </li></ul></dd>
     
 
@@ -597,70 +543,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>audioCodec</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the audio codec information as a <b>string</b>.
-<br/>
-- Returns <b>null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -690,7 +572,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line92">line 92</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line144">line 144</a>
     </li></ul></dd>
     
 
@@ -719,60 +601,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>duration</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the duration of latest Mp4 segment as a <b>Float</b>(<i>seconds</i>).
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -802,7 +630,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line184">line 184</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line240">line 240</a>
     </li></ul></dd>
     
 
@@ -831,70 +659,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>initialization</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Buffer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the Mp4 initialization fragment as a <b>Buffer</b>.
-<br/>
-- Returns <b>null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -924,7 +688,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line128">line 128</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line188">line 188</a>
     </li></ul></dd>
     
 
@@ -953,62 +717,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>keyframe</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns a boolean indicating if the current segment contains a keyframe.
-<br/>
-- Returns <b>false</b> if the current segment does not contain a keyframe.
-<br/>
-- Returns <b>true</b> if segment only contains audio.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1038,7 +746,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line246">line 246</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line297">line 297</a>
     </li></ul></dd>
     
 
@@ -1067,70 +775,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>m3u8</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the fmp4 HLS m3u8 playlist as a <b>string</b>.
-<br/>
-- Returns <b>null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1160,7 +804,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line220">line 220</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line273">line 273</a>
     </li></ul></dd>
     
 
@@ -1189,70 +833,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>mime</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the mime type information as a <b>string</b>.
-<br/>
-- Returns <b>null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1282,7 +862,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line116">line 116</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -1311,70 +891,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>segment</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Buffer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the latest Mp4 segment as a <b>Buffer</b>.
-<br/>
-- Returns <b>null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1404,7 +920,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line140">line 140</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line199">line 199</a>
     </li></ul></dd>
     
 
@@ -1433,62 +949,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>segmentObject</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the latest Mp4 segment as an <b>object</b>.
-<br/>
- - <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
-<br/>
-- Returns <b>{segment: null, sequence: -1, duration: -1; timestamp: -1, keyframe: true}</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1518,7 +978,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line154">line 154</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line212">line 212</a>
     </li></ul></dd>
     
 
@@ -1547,72 +1007,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>segmentObjects</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the Mp4 segments as an <b>Array</b> of <b>objects</b>
-<br/>
-- <b><code>[{segment, sequence, duration, timestamp, keyframe},...]</code></b>
-<br/>
-- Returns <b>null</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1642,7 +1036,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line272">line 272</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line321">line 321</a>
     </li></ul></dd>
     
 
@@ -1671,56 +1065,60 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
+<dl class="details">
 
     
 
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
-        <tr>
-            
-                <td class="name"><code>sequence</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the sequence of the latest Mp4 segment as an <b>Integer</b>.
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
+    
 
     
-    </tbody>
-</table>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line284">line 284</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="timescale"><span class="type-signature">(readonly) </span>timescale<span class="type-signature"></span></h4>
+
+
+
+
+
+
 
 
 
@@ -1754,7 +1152,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line232">line 232</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line177">line 177</a>
     </li></ul></dd>
     
 
@@ -1783,60 +1181,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>timestamp</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the timestamp of the latest Mp4 segment as an <b>Integer</b>(<i>milliseconds</i>).
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1866,7 +1210,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line172">line 172</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -1895,60 +1239,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>totalByteLength</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the total byte length of the Mp4 initialization and all Mp4 segments as ant <b>Integer</b>(<i>bytes</i>).
-<br/>
-- Returns <b>-1</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -1978,7 +1268,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line208">line 208</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line262">line 262</a>
     </li></ul></dd>
     
 
@@ -2007,60 +1297,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>totalDuration</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">- Returns the total duration of all Mp4 segments as a <b>Float</b>(<i>seconds</i>).
-<br/>
-- Returns <b>-1</b> if requested before first <a href="Mp4Frag.html#event:segment">segment event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -2090,7 +1326,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line196">line 196</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line251">line 251</a>
     </li></ul></dd>
     
 
@@ -2119,70 +1355,6 @@
 
 
 
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>videoCodec</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last">- Returns the video codec information as a <b>string</b>.
-<br/>
-- Returns <b>null</b> if requested before <a href="Mp4Frag.html#event:initialized">initialized event</a>.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
 <dl class="details">
 
     
@@ -2212,7 +1384,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line104">line 104</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -2240,7 +1412,7 @@
     
 
     
-    <h4 class="name" id="getSegmentObject"><span class="type-signature"></span>getSegmentObject<span class="signature">(sequence)</span><span class="type-signature"> &rarr; (nullable) {object}</span></h4>
+    <h4 class="name" id="getSegmentObject"><span class="type-signature"></span>getSegmentObject<span class="signature">(sequence)</span><span class="type-signature"> &rarr; {object|null}</span></h4>
     
 
     
@@ -2299,7 +1471,12 @@
 
             
 
-            <td class="description last">sequence number</td>
+            <td class="description last">sequence number
+- Returns the Mp4 segment that corresponds to the numbered sequence as an <b>object</b>.
+<br/>
+- <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
+<br/>
+- Returns <b>null</b> if there is no segment that corresponds to sequence number.</td>
         </tr>
 
     
@@ -2340,7 +1517,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line285">line 285</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line334">line 334</a>
     </li></ul></dd>
     
 
@@ -2368,14 +1545,6 @@
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    - Returns the Mp4 segment that corresponds to the numbered sequence as an <b>object</b>.
-<br/>
-- <b><code>{segment, sequence, duration, timestamp, keyframe}</code></b>
-<br/>
-- Returns <b>null</b> if there is no segment that corresponds to sequence number.
-</div>
-
 
 
 <dl>
@@ -2385,12 +1554,103 @@
     <dd>
         
 <span class="param-type">object</span>
+|
+
+<span class="param-type">null</span>
 
 
     </dd>
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Clear cached values
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line356">line 356</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2454,7 +1714,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line296">line 296</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line345">line 345</a>
     </li></ul></dd>
     
 
@@ -2706,7 +1966,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line432">line 432</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line673">line 673</a>
     </li></ul></dd>
     
 
@@ -2804,7 +2064,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line297">line 297</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line357">line 357</a>
     </li></ul></dd>
     
 
@@ -3094,7 +2354,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line718">line 718</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line840">line 840</a>
     </li></ul></dd>
     
 
@@ -3142,7 +2402,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.10</a> on Fri May 19 2023 20:43:44 GMT-0500 (Central Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun May 14 2023 20:09:37 GMT-0500 (Central Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
