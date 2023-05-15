@@ -56,7 +56,6 @@ class Mp4Frag extends Transform {
   #hlsPlaylistSize;
   #hlsPlaylistExtra;
   #segmentCount;
-  #segmentObjects;
   #bufferPool;
   #poolLength = 0;
   #ftypSize = 0;
@@ -72,20 +71,21 @@ class Mp4Frag extends Transform {
   #smallChunk; // to be used when chunk is less than 8 bytes and moof/mdat box index cannot be found
 
   /* ----> private fields with getters (readonly) <---- */
+  #initialization;
   #audioCodec;
   #videoCodec;
   #mime;
-  #initialization;
+  #timescale;
   #segment;
-  #timestamp;
+  #sequence;
   #duration;
+  #timestamp;
+  #keyframe;
+  #segmentObjects;
   #totalDuration;
   #totalByteLength;
-  #m3u8;
-  #sequence;
-  #keyframe;
   #allKeyframes;
-  #timescale;
+  #m3u8;
 
   /**
    * @constructor
@@ -978,11 +978,11 @@ class Mp4Frag extends Transform {
   /**
    * Required for stream transform.
    * @param {Buffer} chunk
-   * @param {BufferEncoding} encoding
+   * @param {string} encoding
    * @param {TransformCallback} callback
    * @private
    */
-  _transform(chunk, encoding, callback) {
+  _transform(chunk, encoding = 'binary', callback) {
     this.#parseChunk(chunk);
     callback();
   }
