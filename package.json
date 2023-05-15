@@ -61,7 +61,8 @@
     "package.json",
     "index.js",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "lib/buffer-pool.js"
   ],
   "engines": {
     "node": ">=14"
