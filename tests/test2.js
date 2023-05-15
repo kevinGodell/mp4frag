@@ -84,7 +84,7 @@ mp4frag.once('error', data => {
   console.log('mp4frag error', data);
 });
 
-const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
+const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'ignore'] });
 
 ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
