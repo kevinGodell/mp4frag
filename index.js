@@ -46,17 +46,15 @@ class Mp4Frag extends Transform {
   static #ESDS = Mp4Frag.#boxFrom([0x65, 0x73, 0x64, 0x73]); // esds
 
   /* ----> private method placeholders <---- */
-  #bufferConcat = Buffer.concat; // will be reassigned if using buffer pool
-  #parseChunk = this.#findFtyp; // reassigned after each box is complete
-  #setKeyframe; // placeholder for #setKeyframeAVCC() | #setKeyframeHECC()
+  #bufferConcat = Buffer.concat; // will be reassigned if setting pool > 0
+  #parseChunk = this.#findFtyp; // reassigned after each box parsing is complete
+  #setKeyframe = this.#noop; // placeholder for #setKeyframeAVCC() | #setKeyframeHECC()
+  #sendSegment = this.#sendSegmentBuffer; // will be reassigned if setting readableObjectMode to true
 
   /* ----> private fields <---- */
-  #hlsPlaylistBase;
-  #hlsPlaylistInit;
-  #hlsPlaylistSize;
-  #hlsPlaylistExtra;
-  #segmentCount;
-  #bufferPool;
+  #hlsPlaylist = undefined;
+  #segmentCount = 0;
+  #bufferPool = 0;
   #poolLength = 0;
   #ftypSize = 0;
   #moovSize = 0;
@@ -68,7 +66,7 @@ class Mp4Frag extends Transform {
   #moofMdatSize = 0;
   #moofMdatChunks = [];
   #moofMdatChunksTotalLength = 0;
-  #smallChunk; // to be used when chunk is less than 8 bytes and moof/mdat box index cannot be found
+  #smallChunk = undefined; // to be used when chunk is less than 8 bytes and moof/mdat box index cannot be found
 
   /* ----> private fields with getters (readonly) <---- */
   #initialization;
@@ -90,6 +88,7 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {object} [options] - Configuration options.
+   * @param {boolean} [options.readableObjectMode = false] - If true, segments will be piped out as an object instead of a Buffer.
    * @param {string} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
    * @param {number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
    * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
@@ -99,27 +98,31 @@ class Mp4Frag extends Transform {
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
-    super({ writableObjectMode: false, readableObjectMode: true });
-    if (typeof options === 'object') {
-      if (typeof options.hlsPlaylistBase !== 'undefined') {
-        if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
-          throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
-        }
-        this.#hlsPlaylistBase = options.hlsPlaylistBase;
-        this.#hlsPlaylistInit = Mp4Frag.#validateBoolean(options.hlsPlaylistInit, Mp4Frag.#HLS_INIT_DEF);
-        this.#hlsPlaylistSize = Mp4Frag.#validateNumber(options.hlsPlaylistSize, Mp4Frag.#HLS_SIZE.def, Mp4Frag.#HLS_SIZE.min, Mp4Frag.#HLS_SIZE.max);
-        this.#hlsPlaylistExtra = Mp4Frag.#validateNumber(options.hlsPlaylistExtra, Mp4Frag.#HLS_EXTRA.def, Mp4Frag.#HLS_EXTRA.min, Mp4Frag.#HLS_EXTRA.max);
-        this.#segmentCount = this.#hlsPlaylistSize + this.#hlsPlaylistExtra;
-        this.#segmentObjects = [];
-      } else if (typeof options.segmentCount !== 'undefined') {
-        this.#segmentCount = Mp4Frag.#validateNumber(options.segmentCount, Mp4Frag.#SEG_SIZE.def, Mp4Frag.#SEG_SIZE.min, Mp4Frag.#SEG_SIZE.max);
-        this.#segmentObjects = [];
+    options = options instanceof Object ? options : {};
+    super({ writableObjectMode: false, readableObjectMode: options.readableObjectMode === true });
+    if (typeof options.hlsPlaylistBase !== 'undefined') {
+      if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
+        throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
       }
-      if (options.pool > 0) {
-        this.#poolLength = (this.#segmentCount || 1) + options.pool;
-        this.#bufferPool = new BufferPool({ length: this.#poolLength });
-        this.#bufferConcat = this.#bufferPool.concat.bind(this.#bufferPool);
-      }
+      this.#hlsPlaylist = {
+        base: options.hlsPlaylistBase,
+        init: Mp4Frag.#validateBool(options.hlsPlaylistInit, Mp4Frag.#HLS_INIT_DEF),
+        size: Mp4Frag.#validateInt(options.hlsPlaylistSize, Mp4Frag.#HLS_SIZE.def, Mp4Frag.#HLS_SIZE.min, Mp4Frag.#HLS_SIZE.max),
+        extra: Mp4Frag.#validateInt(options.hlsPlaylistExtra, Mp4Frag.#HLS_EXTRA.def, Mp4Frag.#HLS_EXTRA.min, Mp4Frag.#HLS_EXTRA.max),
+      };
+      this.#segmentCount = this.#hlsPlaylist.size + this.#hlsPlaylist.extra;
+      this.#segmentObjects = [];
+    } else if (typeof options.segmentCount !== 'undefined') {
+      this.#segmentCount = Mp4Frag.#validateInt(options.segmentCount, Mp4Frag.#SEG_SIZE.def, Mp4Frag.#SEG_SIZE.min, Mp4Frag.#SEG_SIZE.max);
+      this.#segmentObjects = [];
+    }
+    if (options.pool > 0) {
+      this.#poolLength = (this.#segmentCount || 1) + options.pool;
+      this.#bufferPool = new BufferPool({ length: this.#poolLength });
+      this.#bufferConcat = this.#bufferPool.concat.bind(this.#bufferPool);
+    }
+    if (options.readableObjectMode === true) {
+      this.#sendSegment = this.#sendSegmentBufferObject;
     }
     /*
     todo after version 0.7.0
@@ -192,6 +195,18 @@ class Mp4Frag extends Transform {
    */
   get initialization() {
     return this.#initialization || null;
+  }
+
+  /**
+   * @readonly
+   * @property {number} poolLength
+   * - Returns the number of array buffers in pool
+   * <br/>
+   * - Returns <b>-1</b> if pool not in use.
+   * @returns {number}
+   */
+  get poolLength() {
+    return this.#poolLength || -1;
   }
 
   /**
@@ -404,7 +419,7 @@ class Mp4Frag extends Transform {
     }
   }
 
-  #noop(chunk) {
+  #noop() {
     // do nothing
     // #parseChunk is set to this after error or end of segments
   }
@@ -458,6 +473,7 @@ class Mp4Frag extends Transform {
         this.#handleFtypMoov();
         this.#parseChunk = this.#findMoof;
       } else if (this.#moovSize < chunkLength) {
+        // recursive
         this.#ftypMoovChunks.push(chunk.subarray(0, this.#moovSize));
         this.#ftypMoovChunksTotalLength += this.#moovSize;
         const nextChunk = chunk.subarray(this.#moovSize);
@@ -508,6 +524,7 @@ class Mp4Frag extends Transform {
         this.#moofMdatChunksTotalLength += chunkLength;
         this.#parseChunk = this.#findMdat;
       } else if (this.#moofSize < this.#moofMdatChunksTotalLength + chunkLength) {
+        // recursive
         const finalChunkSize = this.#moofSize - this.#moofMdatChunksTotalLength;
         this.#moofMdatChunks.push(chunk.subarray(0, finalChunkSize));
         this.#moofMdatChunksTotalLength += finalChunkSize;
@@ -542,6 +559,7 @@ class Mp4Frag extends Transform {
           this.#parseChunk = this.#noop;
         } else {
           if (this.#smallChunk) {
+            // recursive
             const repairedChunk = Buffer.concat([this.#smallChunk, chunk]);
             this.#smallChunk = undefined;
             this.#parseChunk(repairedChunk);
@@ -563,15 +581,13 @@ class Mp4Frag extends Transform {
   #findMdat(chunk) {
     const chunkLength = chunk.length;
     if (this.#mdatSize) {
-      //console.log('has mdat size', this.#mdatSize);
       if (this.#moofMdatSize === this.#moofMdatChunksTotalLength + chunkLength) {
-        //console.log('mdat ===', this.#moofMdatSize, this.#moofMdatChunksTotalLength + chunkLength);
         this.#moofMdatChunks.push(chunk);
         this.#moofMdatChunksTotalLength += chunkLength;
         this.#handleMoofMdat();
         this.#parseChunk = this.#findMoof;
       } else if (this.#moofMdatSize < this.#moofMdatChunksTotalLength + chunkLength) {
-        //console.log('mdat <', this.#moofMdatSize, chunkLength, this.#moofMdatChunksTotalLength, this.#moofMdatChunksTotalLength + chunkLength);
+        // recursive
         const finalChunkSize = this.#moofMdatSize - this.#moofMdatChunksTotalLength;
         this.#moofMdatChunks.push(chunk.subarray(0, finalChunkSize));
         this.#moofMdatChunksTotalLength += finalChunkSize;
@@ -580,24 +596,20 @@ class Mp4Frag extends Transform {
         this.#parseChunk = this.#findMoof;
         this.#parseChunk(nextChunk);
       } else {
-        //console.log('mdat >', this.#moofMdatSize, this.#moofMdatChunksTotalLength + chunkLength);
         this.#moofMdatChunks.push(chunk);
         this.#moofMdatChunksTotalLength += chunkLength;
       }
     } else {
-      //console.log('find mdat index');
       if (chunk.indexOf(Mp4Frag.#MDAT) === 4) {
         this.#mdatSize = chunk.readUInt32BE(0);
         this.#moofMdatSize = this.#moofSize + this.#mdatSize;
         if (this.#mdatSize === chunkLength) {
-          //console.log('mdat ===', this.#mdatSize, chunkLength);
           this.#moofMdatChunks.push(chunk);
           this.#moofMdatChunksTotalLength += chunkLength;
           this.#handleMoofMdat();
           this.#parseChunk = this.#findMoof;
         } else if (this.#mdatSize < chunkLength) {
           // recursive
-          //console.log('mdat <', this.#mdatSize, chunkLength);
           this.#moofMdatChunks.push(chunk.subarray(0, this.#mdatSize));
           this.#moofMdatChunksTotalLength += this.#mdatSize;
           const nextChunk = chunk.subarray(this.#mdatSize);
@@ -605,7 +617,6 @@ class Mp4Frag extends Transform {
           this.#parseChunk = this.#findMoof;
           this.#parseChunk(nextChunk);
         } else {
-          //console.log('mdat >', this.#mdatSize, chunkLength);
           this.#moofMdatChunks.push(chunk);
           this.#moofMdatChunksTotalLength += chunkLength;
         }
@@ -628,7 +639,6 @@ class Mp4Frag extends Transform {
   }
 
   #handleMoofMdat() {
-    //console.log('handle moof mdat');
     const moofMdat = ((list, totalLength) => {
       if (list.length === 2) {
         const [moof, mdat] = list;
@@ -636,8 +646,6 @@ class Mp4Frag extends Transform {
           return Buffer.from(moof.buffer, moof.byteOffset, totalLength);
         }
       }
-      //return this.#bufferPool.concat(list, totalLength);
-      //return Buffer.concat(list, totalLength);
       return this.#bufferConcat(list, totalLength);
     })(this.#moofMdatChunks, this.#moofMdatChunksTotalLength);
     this.#resetMoofMdat();
@@ -678,12 +686,12 @@ class Mp4Frag extends Transform {
       return;
     }
     this.#mime = `${mp4Type}/mp4; codecs="${codecs.join(', ')}"`;
-    if (this.#hlsPlaylistBase && this.#hlsPlaylistInit) {
+    if (this.#hlsPlaylist && this.#hlsPlaylist.init) {
       let m3u8 = '#EXTM3U\n';
       m3u8 += '#EXT-X-VERSION:7\n';
       m3u8 += `#EXT-X-TARGETDURATION:1\n`;
       m3u8 += `#EXT-X-MEDIA-SEQUENCE:0\n`;
-      m3u8 += `#EXT-X-MAP:URI="init-${this.#hlsPlaylistBase}.mp4"\n`;
+      m3u8 += `#EXT-X-MAP:URI="init-${this.#hlsPlaylist.base}.mp4"\n`;
       this.#m3u8 = m3u8;
     }
     /**
@@ -824,21 +832,21 @@ class Mp4Frag extends Transform {
         this.#totalDuration -= duration;
         this.#totalByteLength -= byteLength;
       }
-      if (this.#hlsPlaylistBase) {
-        let i = this.#segmentObjects.length > this.#hlsPlaylistSize ? this.#segmentObjects.length - this.#hlsPlaylistSize : 0;
+      if (this.#hlsPlaylist) {
+        let i = this.#segmentObjects.length > this.#hlsPlaylist.size ? this.#segmentObjects.length - this.#hlsPlaylist.size : 0;
         const mediaSequence = this.#segmentObjects[i].sequence;
         let targetDuration = 1;
         let segments = '';
         for (i; i < this.#segmentObjects.length; ++i) {
           targetDuration = Math.max(targetDuration, this.#segmentObjects[i].duration);
           segments += `#EXTINF:${this.#segmentObjects[i].duration.toFixed(6)},\n`;
-          segments += `${this.#hlsPlaylistBase}${this.#segmentObjects[i].sequence}.m4s\n`;
+          segments += `${this.#hlsPlaylist.base}${this.#segmentObjects[i].sequence}.m4s\n`;
         }
         let m3u8 = '#EXTM3U\n';
         m3u8 += '#EXT-X-VERSION:7\n';
         m3u8 += `#EXT-X-TARGETDURATION:${Math.round(targetDuration) || 1}\n`;
         m3u8 += `#EXT-X-MEDIA-SEQUENCE:${mediaSequence}\n`;
-        m3u8 += `#EXT-X-MAP:URI="init-${this.#hlsPlaylistBase}.mp4"\n`;
+        m3u8 += `#EXT-X-MAP:URI="init-${this.#hlsPlaylist.base}.mp4"\n`;
         m3u8 += segments;
         this.#m3u8 = m3u8;
       }
@@ -850,9 +858,7 @@ class Mp4Frag extends Transform {
     todo after version 0.7.0
     replace with emit('data')
     */
-    if (this._readableState.pipesCount > 0) {
-      this.push(this.segmentObject);
-    }
+    this.#sendSegment();
     /**
      * Fires when the latest Mp4 segment is parsed from the piped data.
      * @event Mp4Frag#segment
@@ -869,6 +875,20 @@ class Mp4Frag extends Transform {
     replace with emit('data')
     */
     this.emit('segment', this.segmentObject);
+  }
+
+  /**
+   * @private
+   */
+  #sendSegmentBuffer() {
+    this.emit('data', this.segment, { type: 'segment', sequence: this.sequence, duration: this.duration, timestamp: this.timestamp, keyframe: this.keyframe });
+  }
+
+  /**
+   * @private
+   */
+  #sendSegmentBufferObject() {
+    this.emit('data', { type: 'segment', segment: this.segment, sequence: this.sequence, duration: this.duration, timestamp: this.timestamp, keyframe: this.keyframe });
   }
 
   /**
@@ -1007,7 +1027,7 @@ class Mp4Frag extends Transform {
    * @private
    * @static
    */
-  static #validateNumber(n, def, min, max) {
+  static #validateInt(n, def, min, max) {
     n = Number.parseInt(n);
     return isNaN(n) ? def : n < min ? min : n > max ? max : n;
   }
@@ -1020,7 +1040,7 @@ class Mp4Frag extends Transform {
    * @private
    * @static
    */
-  static #validateBoolean(bool, def) {
+  static #validateBool(bool, def) {
     return typeof bool === 'boolean' ? bool : def;
   }
 
