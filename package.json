@@ -1,6 +1,6 @@
 {
   "name": "mp4frag",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.",
   "main": "index.js",
   "scripts": {

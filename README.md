@@ -19,6 +19,10 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 ### Known Limitations:
 * only supports fragmented mp4 video encoded with h.264, h.265, and aac
 
+# Changes v0.6.0 => v0.6.1
+* readableObjectMode can be set in [constructor](https://kevingodell.github.io/mp4frag/Mp4Frag.html#Mp4Frag) (defaults to false)
+* piping amd data event outputs segment buffer by default
+
 # Changes v0.5.4 => v0.6.0
 * dropping support for node.js < 10
 * h.265 codec parsing

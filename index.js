@@ -47,6 +47,7 @@ class Mp4Frag extends Transform {
   /**
    * @constructor
    * @param {object} [options] - Configuration options.
+   * @param {boolean} [options.readableObjectMode = false] - If true, segments will be piped out as an object instead of a Buffer.
    * @param {string} [options.hlsPlaylistBase] - Base name of files in m3u8 playlist. Affects the generated m3u8 playlist by naming file fragments. Must be set to generate m3u8 playlist. e.g. 'front_door'
    * @param {number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
    * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
@@ -55,22 +56,26 @@ class Mp4Frag extends Transform {
    * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
-    super({ readableObjectMode: true });
-    if (typeof options === 'object') {
-      if (typeof options.hlsPlaylistBase !== 'undefined') {
-        if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
-          throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
-        }
-        this._hlsPlaylistBase = options.hlsPlaylistBase;
-        this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, _HLS_INIT_DEF);
-        this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_SIZE_DEF, _HLS_SIZE_MIN, _HLS_SIZE_MAX);
-        this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, _HLS_EXTRA_DEF, _HLS_EXTRA_MIN, _HLS_EXTRA_MAX);
-        this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
-        this._segmentObjects = [];
-      } else if (typeof options.segmentCount !== 'undefined') {
-        this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_SIZE_DEF, _SEG_SIZE_MIN, _SEG_SIZE_MAX);
-        this._segmentObjects = [];
+    options = options instanceof Object ? options : {};
+    super({ writableObjectMode: false, readableObjectMode: options.readableObjectMode === true });
+    if (typeof options.hlsPlaylistBase !== 'undefined') {
+      if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
+        throw new Error('hlsPlaylistBase must only contain underscores and case-insensitive letters (_, a-z, A-Z)');
       }
+      this._hlsPlaylistBase = options.hlsPlaylistBase;
+      this._hlsPlaylistInit = Mp4Frag._validateBoolean(options.hlsPlaylistInit, _HLS_INIT_DEF);
+      this._hlsPlaylistSize = Mp4Frag._validateNumber(options.hlsPlaylistSize, _HLS_SIZE_DEF, _HLS_SIZE_MIN, _HLS_SIZE_MAX);
+      this._hlsPlaylistExtra = Mp4Frag._validateNumber(options.hlsPlaylistExtra, _HLS_EXTRA_DEF, _HLS_EXTRA_MIN, _HLS_EXTRA_MAX);
+      this._segmentCount = this._hlsPlaylistSize + this._hlsPlaylistExtra;
+      this._segmentObjects = [];
+    } else if (typeof options.segmentCount !== 'undefined') {
+      this._segmentCount = Mp4Frag._validateNumber(options.segmentCount, _SEG_SIZE_DEF, _SEG_SIZE_MIN, _SEG_SIZE_MAX);
+      this._segmentObjects = [];
+    }
+    if (options.readableObjectMode === true) {
+      this._sendSegment = this._sendSegmentBufferObject;
+    } else {
+      this._sendSegment = this._sendSegmentBuffer;
     }
     this._parseChunk = this._findFtyp;
     return this;
@@ -709,9 +714,7 @@ class Mp4Frag extends Transform {
       this._totalDuration = this._duration;
       this._totalByteLength = this._initialization.byteLength + chunk.byteLength;
     }
-    if (this._readableState.pipesCount > 0) {
-      this.push(this.segmentObject);
-    }
+    this._sendSegment();
     /**
      * Fires when the latest Mp4 segment is parsed from the piped data.
      * @event Mp4Frag#segment
@@ -724,6 +727,20 @@ class Mp4Frag extends Transform {
      * @property {number} object.keyframe - [Mp4Frag.keyframe]{@link Mp4Frag#keyframe}
      */
     this.emit('segment', this.segmentObject);
+  }
+
+  /**
+   * @private
+   */
+  _sendSegmentBuffer() {
+    this.emit('data', this.segment, { type: 'segment', sequence: this.sequence, duration: this.duration, timestamp: this.timestamp, keyframe: this.keyframe });
+  }
+
+  /**
+   * @private
+   */
+  _sendSegmentBufferObject() {
+    this.emit('data', { type: 'segment', segment: this.segment, sequence: this.sequence, duration: this.duration, timestamp: this.timestamp, keyframe: this.keyframe });
   }
 
   /**
