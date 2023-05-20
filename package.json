@@ -11,9 +11,12 @@
     "doc": "./node_modules/.bin/jsdoc index.js -d docs && git commit -m \"update docs\" -- docs",
     "lint": "./node_modules/.bin/eslint --fix .",
     "codecs": "npm run aac && npm run avc && npm run hevc",
-    "aac": "node tests/aac/testSamples",
-    "avc": "node tests/avc/testSamples",
-    "hevc": "node tests/hevc/testSamples"
+    "aac": "node tests/aac/test",
+    "avc": "node tests/avc/test",
+    "hevc": "node tests/hevc/test",
+    "romf": "node tests/readableObjectMode_false/test",
+    "romt": "node tests/readableObjectMode_true/test",
+    "smch": "node tests/small_chunk/test"
   },
   "repository": {
     "type": "git",
