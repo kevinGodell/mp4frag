@@ -1,6 +1,6 @@
 'use strict';
 
-console.time('=====> readableObjectMode true');
+console.time('=====> readableObjectMode_true');
 
 const Mp4Frag = require('../../index');
 
@@ -90,7 +90,7 @@ ffmpeg.once('error', error => {
 ffmpeg.once('exit', (code, signal) => {
   assert(counter === count, `${counter} !== ${count}`);
   assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-  console.timeEnd('=====> readableObjectMode true');
+  console.timeEnd('=====> readableObjectMode_true');
 });
 
 const writable = new Writable({
