@@ -50,6 +50,7 @@ class Mp4Frag extends Transform {
   #parseChunk = this.#findFtyp; // reassigned after each box parsing is complete
   #setKeyframe = this.#noop; // placeholder for #setKeyframeAVCC() | #setKeyframeHECC()
   #sendSegment = this.#sendSegmentBuffer; // will be reassigned if setting readableObjectMode to true
+  #sendInit = this.#sendInitBuffer; // will be reassigned if setting readableObjectMode to true
 
   /* ----> private fields <---- */
   #hlsPlaylist = undefined;
@@ -123,6 +124,7 @@ class Mp4Frag extends Transform {
     }
     if (options.readableObjectMode === true) {
       this.#sendSegment = this.#sendSegmentBufferObject;
+      this.#sendInit = this.#sendInitBufferObject;
     }
     /*
     todo after version 0.7.0
@@ -694,6 +696,7 @@ class Mp4Frag extends Transform {
       m3u8 += `#EXT-X-MAP:URI="init-${this.#hlsPlaylist.base}.mp4"\n`;
       this.#m3u8 = m3u8;
     }
+    this.#sendInit();
     /**
      * Fires when the [initialization]{@link Mp4Frag#initialization} of the Mp4 is parsed from the piped data.
      * @event Mp4Frag#initialized
@@ -708,6 +711,20 @@ class Mp4Frag extends Transform {
     replace with emit('data')
     */
     this.emit('initialized', { mime: this.mime, initialization: this.initialization, m3u8: this.m3u8 });
+  }
+
+  /**
+   * @private
+   */
+  #sendInitBuffer() {
+    this.emit('data', this.initialization, { type: 'init', mime: this.mime, m3u8: this.m3u8 });
+  }
+
+  /**
+   * @private
+   */
+  #sendInitBufferObject() {
+    this.emit('data', { type: 'init', initialization: this.initialization, mime: this.mime, m3u8: this.m3u8 });
   }
 
   /**
