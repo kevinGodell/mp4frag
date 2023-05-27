@@ -34,6 +34,7 @@ jobs:
       - run: npm run romf
       - run: npm run romt
       - run: npm run smch
+      - run: npm run spch
 
   windows:
 
@@ -59,6 +60,7 @@ jobs:
       - run: npm run romf
       - run: npm run romt
       - run: npm run smch
+      - run: npm run spch
 
   macos:
 
@@ -84,3 +86,4 @@ jobs:
       - run: npm run romf
       - run: npm run romt
       - run: npm run smch
+      - run: npm run spch

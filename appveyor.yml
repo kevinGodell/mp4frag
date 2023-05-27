@@ -24,4 +24,5 @@ test_script:
   - npm run romf
   - npm run romt
   - npm run smch
+  - npm run spch
 build: false

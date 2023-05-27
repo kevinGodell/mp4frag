@@ -16,7 +16,8 @@
     "hevc": "node tests/hevc/test",
     "romf": "node tests/readableObjectMode_false/test",
     "romt": "node tests/readableObjectMode_true/test",
-    "smch": "node tests/small_chunk/test"
+    "smch": "node tests/small_chunk/test",
+    "spch": "node tests/split_chunk/test"
   },
   "repository": {
     "type": "git",
