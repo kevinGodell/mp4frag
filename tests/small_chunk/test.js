@@ -10,9 +10,9 @@ const { readFileSync } = require('fs');
 
 const { join } = require('path');
 
-const init = readFileSync(join(__dirname, 'init.mp4'));
+const init = readFileSync(join(__dirname, '../in/init.mp4'));
 
-const segment = readFileSync(join(__dirname, 'segment.m4s'));
+const segment = readFileSync(join(__dirname, '../in/segment.m4s'));
 
 const mp4frag = new Mp4Frag();
 
