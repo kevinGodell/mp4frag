@@ -22,7 +22,7 @@ const { deprecate } = require('util');
  */
 class Mp4Frag extends Transform {
   /* ----> static private fields <---- */
-  static #ERRORS = { invalidArg: 'ERR_INVALID_ARG', chunkParse: 'ERR_CHUNK_PARSE', chunkLength: 'ERR_CHUNK_LENGTH' };
+  static #ERR = { invalidArg: 'ERR_INVALID_ARG', chunkParse: 'ERR_CHUNK_PARSE', chunkLength: 'ERR_CHUNK_LENGTH' };
   static #HLS_INIT_DEF = true; // initialize hls playlist before 1st segment
   static #HLS_SIZE = { def: 4, min: 2, max: 20 }; // hls playlist size
   static #HLS_EXTRA = { def: 0, min: 0, max: 10 }; // hls playlist extra segments in memory
@@ -95,8 +95,8 @@ class Mp4Frag extends Transform {
    * @param {number} [options.hlsPlaylistSize = 4] - Number of segments to use in m3u8 playlist. Must be an integer ranging from 2 to 20.
    * @param {number} [options.hlsPlaylistExtra = 0] - Number of extra segments to keep in memory. Must be an integer ranging from 0 to 10.
    * @param {boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
-   * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. Ignored if using options.hlsPlaylistBase. Must be an integer ranging from 2 to 30.
-   * @param {number} [options.pool = 0] - Experimental buffer pool.
+   * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. If using hlsPlaylistBase, value will be calculated from hlsPlaylistSize + hlsPlaylistExtra. Must be an integer ranging from 2 to 30.
+   * @param {number} [options.pool = 0] - Reuse pooled ArrayBuffer allocations to reduce garbage collection. Set to 1 to activate. Experimental.
    */
   constructor(options) {
     options = options instanceof Object ? options : {};
@@ -104,7 +104,7 @@ class Mp4Frag extends Transform {
     if (typeof options.hlsPlaylistBase !== 'undefined') {
       if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
         return process.nextTick(() => {
-          this.#emitError('hlsPlaylistBase must only contain underscores and letters (_, a-z, A-Z)', Mp4Frag.#ERRORS.invalidArg);
+          this.#emitError('hlsPlaylistBase must only contain underscores and letters (_, a-z, A-Z)', Mp4Frag.#ERR.invalidArg);
         });
       }
       this.#hlsPlaylist = {
@@ -389,11 +389,6 @@ class Mp4Frag extends Transform {
    * Clear cached values
    */
   reset() {
-    /**
-     * Fires when resetCache() is called.
-     * @event Mp4Frag#reset
-     * @type {Event}
-     */
     this.emit('reset');
     this.#parseChunk = this.#findFtyp;
     if (this.#segmentObjects) {
@@ -413,30 +408,49 @@ class Mp4Frag extends Transform {
     this.#totalDuration = undefined;
     this.#totalByteLength = undefined;
     this.#m3u8 = undefined;
-    this.#setKeyframe = undefined;
-
+    this.#setKeyframe = this.#noop;
     this.#resetFtypMoov();
     this.#resetMoofMdat();
-
     if (this.#bufferPool) {
       this.#bufferPool.reset();
     }
   }
 
   /**
-   * @private
+   *
+   * @returns {object}
    */
-  #noop() {
-    // do nothing
-    // #parseChunk is set to this after error or end of segments
+  toJSON() {
+    return {
+      initialization: this.initialization,
+      audioCodec: this.audioCodec,
+      videoCodec: this.videoCodec,
+      mime: this.mime,
+      timescale: this.timescale,
+      poolLength: this.poolLength,
+      segmentObject: this.segmentObject,
+      segmentObjects: this.segmentObjects,
+      totalDuration: this.totalDuration,
+      totalByteLength: this.totalByteLength,
+      allKeyframes: this.allKeyframes,
+      m3u8: this.m3u8,
+    };
   }
 
   /**
    * @private
    */
-  #emitError(str, code) {
+  #noop() {}
+
+  /**
+   *
+   * @param {string} msg
+   * @param {string} code
+   * @private
+   */
+  #emitError(msg, code) {
     this.#parseChunk = this.#noop;
-    const error = new Error(str);
+    const error = new Error(msg);
     error.code = code;
     this.emit('error', error);
   }
@@ -462,10 +476,10 @@ class Mp4Frag extends Transform {
         this.#parseChunk = this.#findMoov;
         this.#parseChunk(nextChunk);
       } else {
-        this.#emitError(`ftypSize:${this.#ftypSize} > chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkLength);
+        this.#emitError(`ftypSize:${this.#ftypSize} > chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkLength);
       }
     } else {
-      this.#emitError(`${Mp4Frag.#FTYP.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkParse);
+      this.#emitError(`${Mp4Frag.#FTYP.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkParse);
     }
   }
 
@@ -493,10 +507,10 @@ class Mp4Frag extends Transform {
         this.#parseChunk = this.#findMoof;
         this.#parseChunk(nextChunk);
       } else {
-        this.#emitError(`moovSize:${this.#moovSize} > chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkLength);
+        this.#emitError(`moovSize:${this.#moovSize} > chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkLength);
       }
     } else {
-      this.#emitError(`${Mp4Frag.#MOOV.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkParse);
+      this.#emitError(`${Mp4Frag.#MOOV.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkParse);
     }
   }
 
@@ -578,7 +592,7 @@ class Mp4Frag extends Transform {
           } else if (chunkLength < 8) {
             this.#smallChunk = chunk;
           } else {
-            this.#emitError(`${Mp4Frag.#MOOF.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkParse);
+            this.#emitError(`${Mp4Frag.#MOOF.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkParse);
           }
         }
       }
@@ -640,7 +654,7 @@ class Mp4Frag extends Transform {
         } else if (chunkLength < 8) {
           this.#smallChunk = chunk;
         } else {
-          this.#emitError(`${Mp4Frag.#MDAT.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERRORS.chunkParse);
+          this.#emitError(`${Mp4Frag.#MDAT.toString()} not found. chunkLength:${chunkLength}.`, Mp4Frag.#ERR.chunkParse);
         }
       }
     }
@@ -680,7 +694,6 @@ class Mp4Frag extends Transform {
     this.#allKeyframes = true;
     this.#totalDuration = 0;
     this.#totalByteLength = chunk.byteLength;
-    this.#setKeyframe = () => {};
     const codecs = [];
     let mp4Type;
     if (this.#parseCodecAVCC(chunk) || this.#parseCodecHVCC(chunk)) {
@@ -694,7 +707,7 @@ class Mp4Frag extends Transform {
       }
     }
     if (codecs.length === 0) {
-      this.#emitError('codecs not found.', Mp4Frag.#ERRORS.chunkParse);
+      this.#emitError('codecs not found.', Mp4Frag.#ERR.chunkParse);
       return;
     }
     this.#mime = `${mp4Type}/mp4; codecs="${codecs.join(', ')}"`;
@@ -707,15 +720,6 @@ class Mp4Frag extends Transform {
       this.#m3u8 = m3u8;
     }
     this.#sendInit();
-    /**
-     * Fires when the [initialization]{@link Mp4Frag#initialization} of the Mp4 is parsed from the piped data.
-     * @event Mp4Frag#initialized
-     * @type {Event}
-     * @property {object} object
-     * @property {string} object.mime - [Mp4Frag.mime]{@link Mp4Frag#mime}
-     * @property {Buffer} object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
-     * @property {string} object.m3u8 - [Mp4Frag.m3u8]{@link Mp4Frag#m3u8}
-     */
     /*
     todo after version 0.7.0
     replace with emit('data')
@@ -881,22 +885,7 @@ class Mp4Frag extends Transform {
       this.#totalDuration = this.#duration;
       this.#totalByteLength = this.#initialization.byteLength + chunk.byteLength;
     }
-    /*
-    todo after version 0.7.0
-    replace with emit('data')
-    */
     this.#sendSegment();
-    /**
-     * Fires when the latest Mp4 segment is parsed from the piped data.
-     * @event Mp4Frag#segment
-     * @type {Event}
-     * @property {object} object - [Mp4Frag.segmentObject]{@link Mp4Frag#segmentObject}
-     * @property {Buffer} object.segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
-     * @property {number} object.sequence - [Mp4Frag.sequence]{@link Mp4Frag#sequence}
-     * @property {number} object.duration - [Mp4Frag.duration]{@link Mp4Frag#duration}
-     * @property {number} object.timestamp - [Mp4Frag.timestamp]{@link Mp4Frag#timestamp}
-     * @property {number} object.keyframe - [Mp4Frag.keyframe]{@link Mp4Frag#keyframe}
-     */
     /*
     todo after version 0.7.0
     replace with emit('data')
@@ -1102,5 +1091,33 @@ class Mp4Frag extends Transform {
     return buffer;
   }
 }
+
+/**
+ * Fires when the [initialization]{@link Mp4Frag#initialization} of the Mp4 is parsed from the piped data.
+ * @event Mp4Frag#initialized
+ * @type {Event}
+ * @property {object} object
+ * @property {string} object.mime - [Mp4Frag.mime]{@link Mp4Frag#mime}
+ * @property {Buffer} object.initialization - [Mp4Frag.initialization]{@link Mp4Frag#initialization}
+ * @property {string} object.m3u8 - [Mp4Frag.m3u8]{@link Mp4Frag#m3u8}
+ */
+
+/**
+ * Fires when the latest Mp4 segment is parsed from the piped data.
+ * @event Mp4Frag#segment
+ * @type {Event}
+ * @property {object} object - [Mp4Frag.segmentObject]{@link Mp4Frag#segmentObject}
+ * @property {Buffer} object.segment - [Mp4Frag.segment]{@link Mp4Frag#segment}
+ * @property {number} object.sequence - [Mp4Frag.sequence]{@link Mp4Frag#sequence}
+ * @property {number} object.duration - [Mp4Frag.duration]{@link Mp4Frag#duration}
+ * @property {number} object.timestamp - [Mp4Frag.timestamp]{@link Mp4Frag#timestamp}
+ * @property {number} object.keyframe - [Mp4Frag.keyframe]{@link Mp4Frag#keyframe}
+ */
+
+/**
+ * Fires when reset() is called.
+ * @event Mp4Frag#reset
+ * @type {Event}
+ */
 
 module.exports = Mp4Frag;
