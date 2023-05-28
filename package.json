@@ -4,7 +4,7 @@
   "description": "A parser that reads piped data from ffmpeg containing a fragmented mp4 and splits it into an initialization segment and media segments. Designed for streaming live video relayed from cctv cameras.",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/test && node tests/test2 && node tests/test3 && node tests/test4 && node tests/test5 && node tests/test6 && node tests/test7 && node tests/test8",
+    "test": "npm run codecs && npm run romf && npm run romt && npm run smch && npm run spch && npm run vaco",
     "preversion": "npm test && npm run codecs",
     "postversion": "npm run doc",
     "pack": "npm --verbose pack",
@@ -17,7 +17,8 @@
     "romf": "node tests/readableObjectMode_false/test",
     "romt": "node tests/readableObjectMode_true/test",
     "smch": "node tests/small_chunk/test",
-    "spch": "node tests/split_chunk/test"
+    "spch": "node tests/split_chunk/test",
+    "vaco": "node tests/various_configs/test"
   },
   "repository": {
     "type": "git",
