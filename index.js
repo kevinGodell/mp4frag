@@ -103,9 +103,10 @@ class Mp4Frag extends Transform {
     super({ writableObjectMode: false, readableObjectMode: options.readableObjectMode === true });
     if (typeof options.hlsPlaylistBase !== 'undefined') {
       if (/[^a-z_]/gi.test(options.hlsPlaylistBase)) {
-        return process.nextTick(() => {
+        throw Mp4Frag.#createError('hlsPlaylistBase must only contain underscores and letters (_, a-z, A-Z)', Mp4Frag.#ERR.invalidArg);
+        /*return process.nextTick(() => {
           this.#emitError('hlsPlaylistBase must only contain underscores and letters (_, a-z, A-Z)', Mp4Frag.#ERR.invalidArg);
-        });
+        });*/
       }
       this.#hlsPlaylist = {
         base: options.hlsPlaylistBase,
@@ -450,9 +451,7 @@ class Mp4Frag extends Transform {
    */
   #emitError(msg, code) {
     this.#parseChunk = this.#noop;
-    const error = new Error(msg);
-    error.code = code;
-    this.emit('error', error);
+    this.emit('error', Mp4Frag.#createError(msg, code));
   }
 
   /**
@@ -1089,6 +1088,20 @@ class Mp4Frag extends Transform {
       buffer[i] = arr[i];
     }
     return buffer;
+  }
+
+  /**
+   *
+   * @param {string} msg
+   * @param {string} code
+   * @returns {Error}
+   * @private
+   * @static
+   */
+  static #createError(msg, code) {
+    const error = new Error(msg);
+    error.code = code;
+    return error;
   }
 }
 
