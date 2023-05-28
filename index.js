@@ -581,7 +581,7 @@ class Mp4Frag extends Transform {
         }
       } else {
         if (chunk.indexOf(Mp4Frag.#MFRA) === 4) {
-          console.log(`\nend of segments ${Mp4Frag.#MFRA.toString()}\n`);
+          // console.log(`\nend of segments ${Mp4Frag.#MFRA.toString()}\n`);
           this.#parseChunk = this.#noop;
         } else {
           if (this.#smallChunk) {
@@ -747,7 +747,7 @@ class Mp4Frag extends Transform {
    * @private
    */
   #setKeyframeHVCC(chunk) {
-    //let index = this.#moofSize + 8;
+    // let index = this.#moofSize + 8;
     let index = chunk.indexOf(Mp4Frag.#MDAT) + 4;
     const end = chunk.length - 5;
     while (index < end) {
@@ -770,7 +770,7 @@ class Mp4Frag extends Transform {
    * @private
    */
   #setKeyframeAVCC(chunk) {
-    //let index = this.#moofSize + 8;
+    // let index = this.#moofSize + 8;
     let index = chunk.indexOf(Mp4Frag.#MDAT) + 4;
     const end = chunk.length - 5;
     while (index < end) {
