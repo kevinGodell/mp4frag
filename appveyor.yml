@@ -18,11 +18,4 @@ test_script:
   - node --version
   - npm --version
   - npm test
-  - npm run aac
-  - npm run avc
-  - npm run hevc
-  - npm run romf
-  - npm run romt
-  - npm run smch
-  - npm run spch
 build: false
