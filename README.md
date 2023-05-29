@@ -19,6 +19,10 @@ A parser that reads piped data from ffmpeg containing a fragmented mp4 and split
 ### Known Limitations:
 * only supports fragmented mp4 video encoded with h.264, h.265, and aac
 
+# Changes v0.6.1 => v0.7.0
+* dropping support for node.js < 14
+* experimental buffer pool support added
+
 # Changes v0.6.0 => v0.6.1
 * readableObjectMode can be set in [constructor](https://kevingodell.github.io/mp4frag/Mp4Frag.html#Mp4Frag) (defaults to false)
 * piping and data event outputs segment buffer by default
@@ -181,7 +185,7 @@ const { spawn } = require('child_process');
 
 const Mp4Frag = require('mp4frag');
 
-// 3 past segments will be held in buffer for later access via mp4frag.buffer
+// 3 past segments will be held in memory for later access via mp4frag.segmentObjects
 // if each segment has a duration of 2 seconds, then buffer will contain 6 seconds of video
 const mp4frag = new Mp4Frag({segmentCount: 3});
 
