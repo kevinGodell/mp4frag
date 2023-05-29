@@ -97,6 +97,7 @@ class Mp4Frag extends Transform {
    * @param {boolean} [options.hlsPlaylistInit = true] - Indicates that m3u8 playlist should be generated after [initialization]{@link Mp4Frag#initialization} is created and before media segments are created.
    * @param {number} [options.segmentCount = 2] - Number of segments to keep in memory. If using hlsPlaylistBase, value will be calculated from hlsPlaylistSize + hlsPlaylistExtra. Must be an integer ranging from 2 to 30.
    * @param {number} [options.pool = 0] - Reuse pooled ArrayBuffer allocations to reduce garbage collection. Set to 1 to activate. Experimental.
+   * @throws Will throw an error if options.hlsPlaylistBase contains characters other than letters(a-zA-Z) and underscores(_).
    */
   constructor(options) {
     options = options instanceof Object ? options : {};
