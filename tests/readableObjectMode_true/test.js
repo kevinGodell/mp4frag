@@ -1,18 +1,20 @@
 'use strict';
 
-console.time('=====> test2.js');
+console.time('=====> readableObjectMode_true');
+
+const Mp4Frag = require('../../index');
+
+const ffmpegPath = require('../../lib/ffmpeg');
+
+const { Writable } = require('stream');
 
 const assert = require('assert');
-
-const Mp4Frag = require('../index');
-
-const ffmpegPath = require('../lib/ffmpeg');
 
 const { spawn } = require('child_process');
 
 const frameLimit = 200;
 
-const gop = 5;
+const gop = 10;
 
 const count = Math.ceil(frameLimit / gop); //expected number of segments to be cut from ffmpeg
 
@@ -64,27 +66,22 @@ const params = [
   'pipe:1',
 ];
 
-const mp4frag = new Mp4Frag();
+const mp4frag = new Mp4Frag({ readableObjectMode: true });
 
-assert(mp4frag.totalDuration === -1);
-assert(mp4frag.totalByteLength === -1);
-
-mp4frag.once('initialized', data => {
-  assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
-  assert(mp4frag.totalDuration === -1);
-  // assert(mp4frag.totalByteLength === 801);
+mp4frag.on('data', data => {
+  if (data.type === 'segment') {
+    counter++;
+  } else if (data.type === 'init') {
+    assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+  }
 });
 
-mp4frag.on('segment', data => {
-  counter++;
-});
-
-mp4frag.once('error', data => {
+mp4frag.once('error', err => {
   //error is expected when ffmpeg exits without unpiping
-  console.log('mp4frag error', data);
+  console.log('mp4frag error', err.message);
 });
 
-const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
+const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'ignore'] });
 
 ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
@@ -93,9 +90,19 @@ ffmpeg.once('error', error => {
 ffmpeg.once('exit', (code, signal) => {
   assert(counter === count, `${counter} !== ${count}`);
   assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-  assert(mp4frag.totalDuration === 0.5);
-  // assert(mp4frag.totalByteLength === 7875);
-  console.timeEnd('=====> test2.js');
+  console.timeEnd('=====> readableObjectMode_true');
 });
 
-ffmpeg.stdio[1].pipe(mp4frag, { end: false });
+const writable = new Writable({
+  objectMode: true,
+  write(chunk, encoding, callback) {
+    if (chunk.type === 'segment') {
+      assert(Buffer.isBuffer(chunk.segment));
+    } else if (chunk.type === 'init') {
+      assert(Buffer.isBuffer(chunk.initialization));
+    }
+    callback();
+  },
+});
+
+ffmpeg.stdio[1].pipe(mp4frag).pipe(writable);

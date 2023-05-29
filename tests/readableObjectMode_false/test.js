@@ -1,12 +1,14 @@
 'use strict';
 
-console.time('=====> test5.js');
+console.time('=====> readableObjectMode_false');
+
+const Mp4Frag = require('../../index');
+
+const ffmpegPath = require('../../lib/ffmpeg');
+
+const { Writable } = require('stream');
 
 const assert = require('assert');
-
-const Mp4Frag = require('../index');
-
-const ffmpegPath = require('../lib/ffmpeg');
 
 const { spawn } = require('child_process');
 
@@ -18,7 +20,7 @@ const count = Math.ceil(frameLimit / gop); //expected number of segments to be c
 
 const scale = 640;
 
-const fps = 100;
+const fps = 10;
 
 let counter = 0;
 
@@ -64,22 +66,22 @@ const params = [
   'pipe:1',
 ];
 
-const mp4frag = new Mp4Frag();
+const mp4frag = new Mp4Frag({ readableObjectMode: false });
 
-mp4frag.once('initialized', data => {
-  assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+mp4frag.on('data', (buffer, data) => {
+  if (data.type === 'segment') {
+    counter++;
+  } else if (data.type === 'init') {
+    assert(data.mime === 'video/mp4; codecs="avc1.4D401F"', `${data.mime} !== video/mp4; codecs="avc1.4D401F"`);
+  }
 });
 
-mp4frag.on('segment', data => {
-  counter++;
-});
-
-mp4frag.once('error', data => {
+mp4frag.once('error', err => {
   //error is expected when ffmpeg exits without unpiping
-  console.log('mp4frag error', data);
+  console.log('mp4frag error', err.message);
 });
 
-const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'inherit'] });
+const ffmpeg = spawn(ffmpegPath, params, { stdio: ['ignore', 'pipe', 'ignore'] });
 
 ffmpeg.once('error', error => {
   console.log('ffmpeg error', error);
@@ -88,7 +90,15 @@ ffmpeg.once('error', error => {
 ffmpeg.once('exit', (code, signal) => {
   assert(counter === count, `${counter} !== ${count}`);
   assert(code === 0, `FFMPEG exited with code ${code} and signal ${signal}`);
-  console.timeEnd('=====> test5.js');
+  console.timeEnd('=====> readableObjectMode_false');
 });
 
-ffmpeg.stdio[1].pipe(mp4frag);
+const writable = new Writable({
+  objectMode: false,
+  write(chunk, encoding, callback) {
+    assert(Buffer.isBuffer(chunk));
+    callback();
+  },
+});
+
+ffmpeg.stdio[1].pipe(mp4frag).pipe(writable);
