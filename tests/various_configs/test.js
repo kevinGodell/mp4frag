@@ -86,7 +86,7 @@ const tests = [
         /* log info to console */
         '-loglevel',
         'quiet',
-        '-stats',
+        '-nostats',
 
         /* use hardware acceleration if available */
         '-hwaccel',
